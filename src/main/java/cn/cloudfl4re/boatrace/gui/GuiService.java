@@ -22,6 +22,7 @@ public final class GuiService {
     private final GuiConfigService configs;
     private final MessageService messages;
     private final RaceManager races;
+    private final GuiLayoutEditor layoutEditor;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
 
@@ -30,6 +31,7 @@ public final class GuiService {
         this.configs = configs;
         this.messages = messages;
         this.races = races;
+        this.layoutEditor = new GuiLayoutEditor(plugin, configs);
     }
 
     public void open(Player player, String menu) {
@@ -51,10 +53,20 @@ public final class GuiService {
         }
         for (GuiMenuConfig.Button button : config.buttons().values()) {
             if (!editor && !hasPermission(player, button.permission())) continue;
-            if (button.index() < inventory.getSize()) inventory.setItem(button.index(), item(button.material(), button.name(), button.lore()));
+            if (button.index() < inventory.getSize()) {
+                ItemStack stack = item(button.material(), button.name(), button.lore());
+                if (editor) {
+                    ItemMeta editorMeta = stack.getItemMeta();
+                    editorMeta.getPersistentDataContainer().set(layoutEditor.buttonKey(), org.bukkit.persistence.PersistentDataType.STRING, button.key());
+                    stack.setItemMeta(editorMeta);
+                }
+                inventory.setItem(button.index(), stack);
+            }
         }
         player.openInventory(inventory);
     }
+
+    public GuiLayoutEditor layoutEditor() { return layoutEditor; }
 
     public void click(Player player, GuiHolder holder, int slot) {
         GuiMenuConfig config = configs.get(holder.menu());

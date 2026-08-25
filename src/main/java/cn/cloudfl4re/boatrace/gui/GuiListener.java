@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 
 public final class GuiListener implements Listener {
     private final GuiService service;
@@ -14,7 +15,7 @@ public final class GuiListener implements Listener {
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         if (!(event.getInventory().getHolder() instanceof GuiHolder holder)) return;
-        event.setCancelled(true);
+        event.setCancelled(!holder.layoutEditor());
         if (event.getWhoClicked() instanceof Player player && event.getRawSlot() >= 0 && event.getRawSlot() < event.getInventory().getSize()) {
             service.click(player, holder, event.getRawSlot());
         }
@@ -22,6 +23,18 @@ public final class GuiListener implements Listener {
 
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
-        if (event.getInventory().getHolder() instanceof GuiHolder) event.setCancelled(true);
+        if (event.getInventory().getHolder() instanceof GuiHolder holder) event.setCancelled(!holder.layoutEditor());
+    }
+
+    @EventHandler
+    public void onClose(InventoryCloseEvent event) {
+        if (!(event.getInventory().getHolder() instanceof GuiHolder holder) || !holder.layoutEditor()) return;
+        if (event.getPlayer() instanceof Player player) {
+            try {
+                service.layoutEditor().save(player, holder, event.getInventory());
+            } catch (Exception exception) {
+                player.sendMessage("§c菜单布局保存失败，已保留原配置。");
+            }
+        }
     }
 }
