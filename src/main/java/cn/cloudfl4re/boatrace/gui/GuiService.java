@@ -15,6 +15,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
+import cn.cloudfl4re.boatrace.model.Point3;
 
 import java.util.Map;
 import java.util.UUID;
@@ -96,6 +97,14 @@ public final class GuiService {
             case RACE_JOIN -> prompt(player, "请输入比赛代码：", code -> races.joinRoom(player, code));
             case TRACK_CREATE -> promptTrack(player);
             case TRACK_LIST -> player.sendMessage("§b当前赛道：§f" + String.join("、", ((BoatRacePlugin) plugin).tracks().all().stream().map(track -> track.id()).toList()));
+            case TRACK_EDIT -> editCurrentTrack(player);
+            case EDIT_POS1 -> ((BoatRacePlugin) plugin).editors().setPosition(player, true);
+            case EDIT_POS2 -> ((BoatRacePlugin) plugin).editors().setPosition(player, false);
+            case EDIT_START -> ((BoatRacePlugin) plugin).editors().setStart(player.getUniqueId());
+            case CHECKPOINT_ADD -> ((BoatRacePlugin) plugin).editors().addCheckpoint(player.getUniqueId());
+            case SLOT_ADD -> ((BoatRacePlugin) plugin).editors().addSlot(player);
+            case EDIT_SAVE -> ((BoatRacePlugin) plugin).editors().save(player);
+            case EDIT_CANCEL -> ((BoatRacePlugin) plugin).editors().cancel(player.getUniqueId());
             case RACE_PAUSE -> control(player, "pause");
             case RACE_RESUME -> control(player, "resume");
             case RACE_END -> control(player, "end");
@@ -133,6 +142,14 @@ public final class GuiService {
             messages.send(player, "track-created", Map.of("track", parts[0]));
             open(player, "track-editor");
         });
+    }
+
+    private void editCurrentTrack(Player player) {
+        ((BoatRacePlugin) plugin).tracks().atStart(player.getWorld().getUID(), new Point3(player.getX(), player.getY(), player.getZ()))
+            .ifPresentOrElse(track -> {
+                if (((BoatRacePlugin) plugin).editors().beginEdit(player, track)) open(player, "track-editor");
+                else messages.send(player, "track-locked");
+            }, () -> messages.send(player, "track-not-found", Map.of("track", "当前位置")));
     }
 
     private void control(Player player, String operation) {
