@@ -2,6 +2,7 @@ package cn.cloudfl4re.boatrace.gui;
 
 import cn.cloudfl4re.boatrace.config.MessageService;
 import cn.cloudfl4re.boatrace.service.RaceManager;
+import cn.cloudfl4re.boatrace.model.RaceSession;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -72,8 +73,26 @@ public final class GuiService {
             case RACE_LEAVE -> races.leave(player);
             case RACE_START -> races.startByPlayer(player);
             case RACE_CANCEL -> races.cancelByPlayer(player);
+            case RACE_PAUSE -> control(player, "pause");
+            case RACE_RESUME -> control(player, "resume");
+            case RACE_END -> control(player, "end");
             default -> messages.send(player, "gui-action-success");
         }
+    }
+
+    private void control(Player player, String operation) {
+        RaceSession session = races.sessionFor(player.getUniqueId());
+        if (session == null) {
+            messages.send(player, "gui-no-race");
+            return;
+        }
+        boolean changed = switch (operation) {
+            case "pause" -> races.pause(session.code());
+            case "resume" -> races.resume(session.code());
+            case "end" -> races.end(session.code());
+            default -> false;
+        };
+        messages.send(player, changed ? (operation.equals("pause") ? "gui-race-paused" : operation.equals("resume") ? "gui-race-resumed" : "gui-race-ended") : "gui-action-success");
     }
 
     private boolean hasPermission(Player player, String permission) {
