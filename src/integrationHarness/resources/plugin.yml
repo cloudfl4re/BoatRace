@@ -1,0 +1,17 @@
+name: BoatRaceIntegrationHarness
+version: '1.0.0'
+main: cn.cloudfl4re.boatrace.harness.BotHarnessPlugin
+description: BoatRace Lophine integration harness
+author: cloudfl4re
+api-version: '26.2'
+folia-supported: true
+commands:
+  brtest:
+    description: Dispatch a command as a test player
+    permission: boatrace.harness
+  brloc:
+    description: Print a test player's vehicle location
+    permission: boatrace.harness
+permissions:
+  boatrace.harness:
+    default: op

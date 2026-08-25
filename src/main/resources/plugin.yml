@@ -1,0 +1,23 @@
+name: BoatRace
+version: "${version}"
+main: cn.cloudfl4re.boatrace.BoatRacePlugin
+description: Lophine 26.2 ice boat racing and time trial plugin
+author: cloudfl4re
+api-version: '26.2'
+folia-supported: true
+softdepend: [PlaceholderAPI]
+commands:
+  race:
+    description: BoatRace main command
+    usage: /race
+    permission: boatrace.use
+permissions:
+  boatrace.use:
+    description: Use BoatRace player commands
+    default: true
+  boatrace.create:
+    description: Create BoatRace rooms
+    default: true
+  boatrace.admin:
+    description: Manage BoatRace tracks and rooms
+    default: op

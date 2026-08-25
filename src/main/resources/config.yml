@@ -1,0 +1,13 @@
+countdown-seconds: 5
+backtrack-countdown-seconds: 5
+race-timeout-seconds: 900
+trial-timeout-seconds: 900
+lobby-idle-timeout-seconds: 1800
+cleanup-period-ticks: 20
+particle-period-ticks: 5
+particle-view-distance: 128.0
+particle-spacing: 1.5
+database-queue-capacity: 256
+race-boat: OAK_BOAT
+papi-empty-name: "暂无记录"
+papi-empty-time: "--:--.---"
