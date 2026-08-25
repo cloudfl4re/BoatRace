@@ -26,7 +26,7 @@ GUI 只包装项目已有业务，不新增跨服、经济、物品奖励或其�
 菜单采用 PlayerMenu 风格的槽位配置，但使用 BoatRace 自己的解析器：
 
 ```yaml
-title: "<gradient:#8EC5FC:#E0C3FC><bold>冰船系统</bold></gradient>"
+title: "冰船系统"
 size: 54
 permission: "boatrace.gui"
 menu:
