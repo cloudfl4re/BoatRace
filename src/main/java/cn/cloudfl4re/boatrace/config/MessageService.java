@@ -3,6 +3,7 @@ package cn.cloudfl4re.boatrace.config;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
@@ -14,6 +15,8 @@ import java.util.Map;
 public final class MessageService {
     private final Plugin plugin;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private final LegacyComponentSerializer legacyAmpersand = LegacyComponentSerializer.legacyAmpersand();
+    private final LegacyComponentSerializer legacySection = LegacyComponentSerializer.legacySection();
     private volatile YamlConfiguration messages;
 
     public MessageService(Plugin plugin) {
@@ -56,7 +59,24 @@ public final class MessageService {
         for (Map.Entry<String, String> entry : values.entrySet()) {
             raw = raw.replace("{" + entry.getKey() + "}", miniMessage.escapeTags(String.valueOf(entry.getValue())));
         }
-        return miniMessage.deserialize(prefix + raw);
+        return deserialize(prefix).append(deserialize(raw));
+    }
+
+    /**
+     * 支持默认 MiniMessage，同时兼容旧配置常见的 & 和 § 颜色代码。
+     * 优先解析 MiniMessage，避免把尖括号占位符误当作传统颜色文本。
+     */
+    private Component deserialize(String raw) {
+        if (raw.indexOf('<') >= 0) {
+            return miniMessage.deserialize(raw);
+        }
+        if (raw.indexOf('&') >= 0) {
+            return legacyAmpersand.deserialize(raw);
+        }
+        if (raw.indexOf('§') >= 0) {
+            return legacySection.deserialize(raw);
+        }
+        return Component.text(raw);
     }
 
     public void send(Audience audience, String key) {

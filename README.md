@@ -1,11 +1,11 @@
 # BoatRace
 
-![Minecraft](https://img.shields.io/badge/Minecraft-26.2-2d2d2d)
-![Server](https://img.shields.io/badge/Server-Lophine%20%2F%20Folia-4b8bbe)
-![Java](https://img.shields.io/badge/Java-25-e76f00)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.x%20%2F%2026.x-2d2d2d)
+![Server](https://img.shields.io/badge/Server-Paper%20%2F%20Folia-4b8bbe)
+![Java](https://img.shields.io/badge/Java-21-e76f00)
 ![PlaceholderAPI](https://img.shields.io/badge/PlaceholderAPI-optional-7b61ff)
 
-BoatRace 是一款面向 Lophine 26.2 的 Folia 兼容冰船竞速插件。它不生成冰道地图，而是把服务器已经建好的冰船道路配置成可计时、可排名、可开房间的竞速赛道。
+BoatRace 是一款同时支持 Paper/Folia 1.21.x 与 26.x 的冰船竞速插件。它不生成冰道地图，而是把服务器已经建好的冰船道路配置成可计时、可排名、可开房间的竞速赛道。
 
 作者：cloudfl4re
 
@@ -26,15 +26,17 @@ BoatRace 是一款面向 Lophine 26.2 的 Folia 兼容冰船竞速插件。它�
 
 ## 环境要求
 
-- Lophine 26.2 build 651
-- Java 25
+- Paper/Folia 1.21.x（最低编译基线）或兼容的 26.x Folia 核心
+- Java 21 或更高版本
 - PlaceholderAPI 2.12.3 或更高版本，可选
 
-插件目标 API 为 `26.2`，并声明了 `folia-supported: true`。调度、传送、数据库和实体操作按 Folia 区域线程模型实现。
+插件目标 API 为 `1.21`，并声明了 `folia-supported: true`。调度、传送、数据库和实体操作按 Folia 区域线程模型实现；同一个 JAR 可运行于 1.21.x 与 26.x Folia。
+
+项目当前不包含箱子 GUI；玩家交互通过 `/race` 指令、聊天消息、ActionBar、标题和粒子提示完成。所有默认玩家可见文本位于 `messages.yml`，支持 MiniMessage、`&` 和 `§` 颜色格式。
 
 ## 安装
 
-1. 下载 `BoatRace-1.1.0.jar`。
+1. 下载 `BoatRace-1.2.0.jar`。
 2. 将插件放入服务端的 `plugins` 目录。
 3. 如果要使用全息图榜单，另外安装 PlaceholderAPI。
 4. 完整重启服务端。
@@ -254,7 +256,7 @@ Shift 下船会被拦截。比赛中需要退出时使用 `/race leave`。
 
 ## 构建
 
-在 Java 25 环境中执行：
+在 Java 21 环境中执行：
 
 ```powershell
 $env:GRADLE_OPTS='-Dhttps.proxyHost=localhost -Dhttps.proxyPort=7897 -Dhttp.proxyHost=localhost -Dhttp.proxyPort=7897'
@@ -264,10 +266,10 @@ $env:GRADLE_OPTS='-Dhttps.proxyHost=localhost -Dhttps.proxyPort=7897 -Dhttp.prox
 正式插件位于：
 
 ```text
-build/libs/BoatRace-1.1.0.jar
+build/libs/BoatRace-1.2.0.jar
 ```
 
-`integrationHarnessJar` 只用于 Lophine 假人验收，不需要安装到正式服务器。
+`integrationHarnessJar` 只用于 Folia 假人验收，不需要安装到正式服务器。
 
 ## 常见问题
 
@@ -303,4 +305,4 @@ build/libs/BoatRace-1.1.0.jar
 
 ## 关于
 
-BoatRace 由 cloudfl4re 制作，面向 Lophine 26.2/Folia 区域线程服务端设计。
+BoatRace 由 cloudfl4re 制作，面向 Paper/Folia 1.21.x 与 26.x 区域线程服务端设计。

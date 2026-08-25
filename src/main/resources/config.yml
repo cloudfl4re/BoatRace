@@ -1,13 +1,30 @@
+# BoatRace 主配置
+# 所有时间单位均为秒，tick 配置使用 Minecraft tick（20 tick = 1 秒）。
+# 修改后执行 /race reload 生效；已有赛道和比赛数据不会被覆盖或迁移。
+
+# 正式比赛发车倒计时，范围建议 1–30 秒。
 countdown-seconds: 5
+# 反向经过记录点后的返回倒计时，范围建议 1–30 秒。
 backtrack-countdown-seconds: 5
+# 正式比赛最长持续时间，超时后判定未完成。
 race-timeout-seconds: 900
+# 自由计时最长持续时间，超时后自动结束。
 trial-timeout-seconds: 900
+# 等待房间无操作自动取消时间。
 lobby-idle-timeout-seconds: 1800
+# 比赛和自由计时清理任务周期，至少 1 tick。
 cleanup-period-ticks: 20
+# 赛道粒子刷新周期，至少 1 tick。
 particle-period-ticks: 5
+# 粒子显示距离，单位为方块，建议 16–256。
 particle-view-distance: 128.0
+# 赛道边界粒子间距，单位为方块，建议大于 0。
 particle-spacing: 1.5
+# 异步数据库写入队列容量，队列满时会向玩家提示失败并记录日志。
 database-queue-capacity: 256
+# 正式比赛使用的船类型，必须是 Bukkit 支持的船实体类型。
 race-boat: OAK_BOAT
+# PlaceholderAPI 无成绩时显示的名称。
 papi-empty-name: "暂无记录"
+# PlaceholderAPI 无成绩时显示的时间。
 papi-empty-time: "--:--.---"

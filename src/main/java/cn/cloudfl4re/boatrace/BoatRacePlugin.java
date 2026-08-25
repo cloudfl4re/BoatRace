@@ -71,7 +71,7 @@ public final class BoatRacePlugin extends JavaPlugin {
                 races.startCleanupTask();
                 registerPlaceholderExpansion();
                 ready.set(true);
-                getLogger().info("BoatRace enabled for Lophine 26.2");
+                getLogger().info("BoatRace enabled for Folia/Paper 1.21.x+ (including 26.x)");
             });
         });
     }
