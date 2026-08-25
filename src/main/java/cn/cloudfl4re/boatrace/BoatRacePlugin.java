@@ -56,7 +56,7 @@ public final class BoatRacePlugin extends JavaPlugin {
         editors = new EditorManager(tracks, database, scheduler, messages, settings::get, particles);
         guiConfigs = new GuiConfigService(this);
         guiConfigs.initialize();
-        gui = new GuiService(this, guiConfigs, messages, races);
+        gui = new GuiService(this, guiConfigs, messages, races, scheduler);
         RaceCommand raceCommand = new RaceCommand(this);
         PluginCommand command = getCommand("race");
         if (command == null) {
