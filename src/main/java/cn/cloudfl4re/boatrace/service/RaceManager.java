@@ -29,6 +29,7 @@ import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.Sound;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
@@ -383,6 +384,7 @@ public final class RaceManager {
                 Component.empty(),
                 Title.Times.times(Duration.ZERO, Duration.ofMillis(850), Duration.ofMillis(150))
             )));
+            runForPlayer(participant.playerId(), player -> player.playSound(player.getLocation(), seconds == 1 ? Sound.BLOCK_NOTE_BLOCK_PLING : Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, seconds == 1 ? 1.2f : 0.8f));
         }
         scheduler.runGlobalDelayed(() -> countdown(code, seconds - 1), 20L);
     }
@@ -411,6 +413,7 @@ public final class RaceManager {
                     Component.empty(),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(250))
                 ));
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
                 startUi(player);
             });
         }

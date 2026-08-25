@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 public final class GuiListener implements Listener {
     private final GuiService service;
@@ -36,5 +37,12 @@ public final class GuiListener implements Listener {
                 player.sendMessage("§c菜单布局保存失败，已保留原配置。");
             }
         }
+    }
+
+    @EventHandler
+    public void onChat(AsyncPlayerChatEvent event) {
+        if (!service.hasPrompt(event.getPlayer().getUniqueId())) return;
+        event.setCancelled(true);
+        service.acceptChat(event.getPlayer(), event.getMessage());
     }
 }

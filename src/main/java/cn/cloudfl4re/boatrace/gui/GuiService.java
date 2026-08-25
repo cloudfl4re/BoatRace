@@ -1,7 +1,9 @@
 package cn.cloudfl4re.boatrace.gui;
 
 import cn.cloudfl4re.boatrace.config.MessageService;
+import cn.cloudfl4re.boatrace.BoatRacePlugin;
 import cn.cloudfl4re.boatrace.service.RaceManager;
+import cn.cloudfl4re.boatrace.scheduler.SchedulerFacade;
 import cn.cloudfl4re.boatrace.model.RaceSession;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -16,21 +18,26 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public final class GuiService {
     private final Plugin plugin;
     private final GuiConfigService configs;
     private final MessageService messages;
     private final RaceManager races;
+    private final SchedulerFacade scheduler;
     private final GuiLayoutEditor layoutEditor;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final LegacyComponentSerializer legacy = LegacyComponentSerializer.legacySection();
+    private final Map<UUID, Consumer<String>> chatPrompts = new ConcurrentHashMap<>();
 
-    public GuiService(Plugin plugin, GuiConfigService configs, MessageService messages, RaceManager races) {
+    public GuiService(Plugin plugin, GuiConfigService configs, MessageService messages, RaceManager races, SchedulerFacade scheduler) {
         this.plugin = plugin;
         this.configs = configs;
         this.messages = messages;
         this.races = races;
+        this.scheduler = scheduler;
         this.layoutEditor = new GuiLayoutEditor(plugin, configs);
     }
 
@@ -85,11 +92,47 @@ public final class GuiService {
             case RACE_LEAVE -> races.leave(player);
             case RACE_START -> races.startByPlayer(player);
             case RACE_CANCEL -> races.cancelByPlayer(player);
+            case RACE_CREATE -> races.createRoom(player);
+            case RACE_JOIN -> prompt(player, "请输入比赛代码：", code -> races.joinRoom(player, code));
+            case TRACK_CREATE -> promptTrack(player);
+            case TRACK_LIST -> player.sendMessage("§b当前赛道：§f" + String.join("、", ((BoatRacePlugin) plugin).tracks().all().stream().map(track -> track.id()).toList()));
             case RACE_PAUSE -> control(player, "pause");
             case RACE_RESUME -> control(player, "resume");
             case RACE_END -> control(player, "end");
             default -> messages.send(player, "gui-action-success");
         }
+    }
+
+    public void acceptChat(Player player, String text) {
+        Consumer<String> prompt = chatPrompts.remove(player.getUniqueId());
+        if (prompt != null) scheduler.runEntity(player, () -> prompt.accept(text.trim()), null);
+    }
+
+    public boolean hasPrompt(UUID playerId) { return chatPrompts.containsKey(playerId); }
+
+    private void prompt(Player player, String message, Consumer<String> action) {
+        player.closeInventory();
+        player.sendMessage("§e" + message + "§7输入 cancel 取消。 ");
+        chatPrompts.put(player.getUniqueId(), value -> {
+            if (value.equalsIgnoreCase("cancel")) return;
+            action.accept(value);
+        });
+    }
+
+    private void promptTrack(Player player) {
+        prompt(player, "请输入新赛道 ID 和显示名称（用空格分隔）：", value -> {
+            String[] parts = value.split("\\s+", 2);
+            if (parts.length < 2) {
+                messages.send(player, "invalid-number");
+                return;
+            }
+            if (!((BoatRacePlugin) plugin).editors().beginCreate(player, parts[0].toLowerCase(java.util.Locale.ROOT), parts[1])) {
+                messages.send(player, "track-exists", Map.of("track", parts[0]));
+                return;
+            }
+            messages.send(player, "track-created", Map.of("track", parts[0]));
+            open(player, "track-editor");
+        });
     }
 
     private void control(Player player, String operation) {
