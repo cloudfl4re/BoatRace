@@ -2,7 +2,7 @@
 # 颜色格式：推荐 MiniMessage；兼容 &2、§e 等传统颜色代码。
 # 占位符使用 {name}，由插件自动转义。修改后执行 /race reload 生效。
 
-prefix: "<dark_gray>[</dark_gray><gradient:#55FFAA:#55AAFF><bold>BoatRace</bold></gradient><dark_gray>]</dark_gray> "
+prefix: "<dark_gray>[</dark_gray><gradient:#8EC5FC:#E0C3FC><bold>BoatRace</bold></gradient><dark_gray>]</dark_gray> "
 
 # 通用
 initializing: "<yellow>插件正在准备赛道数据，请稍候再试。</yellow>"
