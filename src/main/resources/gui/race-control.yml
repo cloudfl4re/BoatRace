@@ -1,0 +1,78 @@
+title: "冰船系统 · 比赛控制"
+size: 54
+permission: "boatrace.gui.race"
+menu:
+  "20":
+    index: 20
+    name: "<yellow><bold>开始比赛</bold></yellow>"
+    material: LIME_CONCRETE
+    lore:
+      - "<gray>房主开始准备发车。</gray>"
+      - "<yellow>点击开始</yellow>"
+    action: race-start
+  "22":
+    index: 22
+    name: "<gold><bold>暂停比赛</bold></gold>"
+    material: CLOCK
+    lore:
+      - "<gray>冻结计时、船只和记录点判定。</gray>"
+      - "<red>需要管理员权限</red>"
+    action: race-pause
+    permission: boatrace.gui.control
+  "24":
+    index: 24
+    name: "<green><bold>继续比赛</bold></green>"
+    material: EMERALD
+    lore:
+      - "<gray>从暂停位置恢复比赛。</gray>"
+      - "<red>需要管理员权限</red>"
+    action: race-resume
+    permission: boatrace.gui.control
+  "30":
+    index: 30
+    name: "<red><bold>结束比赛</bold></red>"
+    material: TNT
+    lore:
+      - "<gray>结束当前比赛并保存结果。</gray>"
+      - "<red>未完成玩家将记为 DNF</red>"
+      - "<yellow>点击后需要确认</yellow>"
+    action: race-end
+    permission: boatrace.gui.control
+    confirm: true
+  "32":
+    index: 32
+    name: "<red><bold>取消比赛</bold></red>"
+    material: BARRIER
+    lore:
+      - "<gray>取消当前等待中的比赛房间。</gray>"
+      - "<red>操作不可恢复</red>"
+    action: race-cancel
+    permission: boatrace.gui.control
+    confirm: true
+  "40":
+    index: 40
+    name: "<aqua><bold>查看排行榜</bold></aqua>"
+    material: GOLD_INGOT
+    lore:
+      - "<gray>查看当前参赛者排名。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: race-leaderboard
+  "49":
+    index: 49
+    name: "<gray>返回</gray>"
+    material: OAK_DOOR
+    lore:
+      - "<gray>返回冰船系统主菜单。</gray>"
+    action: back
+pane:
+  enable: true
+  index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 48, 50, 51, 52, 53]
+  name: §e✧ 闪闪发光的边框 ✧
+  material: WHITE_STAINED_GLASS_PANE
+  lore:
+    - §7嘿嘿嘿～
+    - §7戳我干嘛呀小坏蛋～
+  isEnchant: false
+  custom-model-data: 0
+  hideFlag: true
+  hideEnchant: true

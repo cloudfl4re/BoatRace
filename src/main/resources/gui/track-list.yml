@@ -1,0 +1,65 @@
+title: "冰船系统 · 赛道管理"
+size: 54
+permission: "boatrace.gui.track"
+menu:
+  "20":
+    index: 20
+    name: "<green><bold>创建赛道</bold></green>"
+    material: GRASS_BLOCK
+    lore:
+      - "<gray>使用当前输入创建赛道草稿。</gray>"
+      - "<yellow>点击后按提示输入 ID 和名称</yellow>"
+    action: track-create
+  "22":
+    index: 22
+    name: "<aqua><bold>赛道列表</bold></aqua>"
+    material: MAP
+    lore:
+      - "<gray>查看服务器上的全部赛道。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: track-list
+  "24":
+    index: 24
+    name: "<blue><bold>赛道信息</bold></blue>"
+    material: BOOK
+    lore:
+      - "<gray>查看当前赛道的范围和记录点。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: track-info
+  "30":
+    index: 30
+    name: "<gold><bold>编辑赛道</bold></gold>"
+    material: WRITABLE_BOOK
+    lore:
+      - "<gray>编辑当前赛道的场地配置。</gray>"
+      - "<yellow>点击打开场地编辑</yellow>"
+    action: track-edit
+  "32":
+    index: 32
+    name: "<red><bold>删除赛道</bold></red>"
+    material: TNT
+    lore:
+      - "<gray>永久删除当前赛道及其成绩。</gray>"
+      - "<red>删除后无法恢复</red>"
+      - "<yellow>点击后需要确认</yellow>"
+    action: track-delete
+    confirm: true
+  "49":
+    index: 49
+    name: "<gray>返回</gray>"
+    material: OAK_DOOR
+    lore:
+      - "<gray>返回冰船系统主菜单。</gray>"
+    action: back
+pane:
+  enable: true
+  index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 48, 50, 51, 52, 53]
+  name: §e✧ 闪闪发光的边框 ✧
+  material: WHITE_STAINED_GLASS_PANE
+  lore:
+    - §7嘿嘿嘿～
+    - §7戳我干嘛呀小坏蛋～
+  isEnchant: false
+  custom-model-data: 0
+  hideFlag: true
+  hideEnchant: true

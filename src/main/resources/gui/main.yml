@@ -1,0 +1,96 @@
+# 冰船系统主菜单。按钮 action 只能使用插件内置动作。
+title: "冰船系统"
+size: 54
+permission: "boatrace.gui"
+menu:
+  "20":
+    index: 20
+    name: "<aqua><bold>创建比赛</bold></aqua>"
+    material: BLUE_ICE
+    lore:
+      - "<gray>在当前赛道起点创建比赛房间。</gray>"
+      - "<yellow>点击创建</yellow>"
+    action: race-create
+    permission: boatrace.gui.race
+  "21":
+    index: 21
+    name: "<aqua><bold>加入比赛</bold></aqua>"
+    material: OAK_BOAT
+    lore:
+      - "<gray>输入比赛代码加入等待房间。</gray>"
+      - "<yellow>点击后按提示输入代码</yellow>"
+    action: race-join
+    permission: boatrace.gui.race
+  "22":
+    index: 22
+    name: "<aqua><bold>比赛状态</bold></aqua>"
+    material: CLOCK
+    lore:
+      - "<gray>查看当前比赛、赛道和参赛人数。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: race-status
+    permission: boatrace.gui.race
+  "23":
+    index: 23
+    name: "<gold><bold>比赛排行榜</bold></gold>"
+    material: GOLD_INGOT
+    lore:
+      - "<gray>查看当前比赛实时排名。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: race-leaderboard
+    permission: boatrace.gui.race
+  "24":
+    index: 24
+    name: "<green><bold>最近比赛</bold></green>"
+    material: WRITABLE_BOOK
+    lore:
+      - "<gray>查看当前赛道最近一场正式比赛。</gray>"
+      - "<yellow>点击查看</yellow>"
+    action: race-last
+    permission: boatrace.gui.race
+  "29":
+    index: 29
+    name: "<yellow><bold>退出活动</bold></yellow>"
+    material: OAK_DOOR
+    lore:
+      - "<gray>退出等待房间、比赛或自由计时。</gray>"
+      - "<red>比赛中退出将无法恢复</red>"
+    action: race-leave
+    permission: boatrace.gui.race
+  "31":
+    index: 31
+    name: "<blue><bold>赛道管理</bold></blue>"
+    material: MAP
+    lore:
+      - "<gray>创建、编辑和查看永久赛道。</gray>"
+      - "<yellow>管理员功能</yellow>"
+    action: open-track-list
+    permission: boatrace.gui.track
+  "40":
+    index: 40
+    name: "<light_purple><bold>比赛控制</bold></light_purple>"
+    material: REDSTONE_TORCH
+    lore:
+      - "<gray>暂停、继续或结束当前比赛。</gray>"
+      - "<yellow>管理员功能</yellow>"
+    action: open-race-control
+    permission: boatrace.gui.control
+  "49":
+    index: 49
+    name: "<gray>关闭菜单</gray>"
+    material: BARRIER
+    lore:
+      - "<gray>返回游戏。</gray>"
+    action: close
+pane:
+  enable: true
+  index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 48, 50, 51, 52, 53]
+  name: §e✧ 闪闪发光的边框 ✧
+  material: WHITE_STAINED_GLASS_PANE
+  lore:
+    - §7嘿嘿嘿～
+    - §7戳我干嘛呀小坏蛋～
+  isEnchant: false
+  custom-model-data: 0
+  hideFlag: true
+  hideEnchant: true

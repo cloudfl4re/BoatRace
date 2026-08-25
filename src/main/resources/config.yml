@@ -28,3 +28,14 @@ race-boat: OAK_BOAT
 papi-empty-name: "暂无记录"
 # PlaceholderAPI 无成绩时显示的时间。
 papi-empty-time: "--:--.---"
+
+# GUI 和比赛反馈音效。修改后执行 /race reload 生效。
+# 无效音效名称会回退到代码内置默认值，并写入服务器日志。
+sounds:
+  gui-click: UI_BUTTON_CLICK
+  countdown: BLOCK_NOTE_BLOCK_HAT
+  countdown-final: BLOCK_NOTE_BLOCK_PLING
+  race-start: BLOCK_NOTE_BLOCK_PLING
+  first-finish: ENTITY_PLAYER_LEVELUP
+  race-finish: ENTITY_PLAYER_LEVELUP
+  race-end: BLOCK_NOTE_BLOCK_BASS

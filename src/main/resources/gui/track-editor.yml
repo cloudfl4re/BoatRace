@@ -1,0 +1,88 @@
+title: "冰船系统 · 场地编辑"
+size: 54
+permission: "boatrace.gui.track"
+menu:
+  "19":
+    index: 19
+    name: "<aqua>设置位置 1</aqua>"
+    material: LIGHT_BLUE_CONCRETE
+    lore:
+      - "<gray>记录你当前所在位置。</gray>"
+      - "<yellow>点击设置</yellow>"
+    action: edit-pos1
+  "21":
+    index: 21
+    name: "<aqua>设置位置 2</aqua>"
+    material: LIGHT_BLUE_CONCRETE
+    lore:
+      - "<gray>记录第二个对角位置。</gray>"
+      - "<yellow>点击设置</yellow>"
+    action: edit-pos2
+  "23":
+    index: 23
+    name: "<blue>保存起点范围</blue>"
+    material: BLUE_ICE
+    lore:
+      - "<gray>将当前位置选择保存为起点范围。</gray>"
+      - "<yellow>点击保存</yellow>"
+    action: edit-start
+  "28":
+    index: 28
+    name: "<green>添加记录点</green>"
+    material: TARGET
+    lore:
+      - "<gray>使用当前选择添加一个记录点。</gray>"
+      - "<yellow>点击添加</yellow>"
+    action: checkpoint-add
+  "30":
+    index: 30
+    name: "<green>添加发车位</green>"
+    material: OAK_BOAT
+    lore:
+      - "<gray>使用当前位置添加发车位。</gray>"
+      - "<yellow>点击添加</yellow>"
+    action: slot-add
+  "32":
+    index: 32
+    name: "<gold>粒子预览</gold>"
+    material: GLOWSTONE
+    lore:
+      - "<gray>切换赛道边界和记录点预览。</gray>"
+      - "<yellow>点击切换</yellow>"
+    action: preview-toggle
+  "40":
+    index: 40
+    name: "<green><bold>保存编辑</bold></green>"
+    material: LIME_DYE
+    lore:
+      - "<gray>验证并保存当前赛道草稿。</gray>"
+      - "<yellow>点击保存</yellow>"
+    action: edit-save
+  "42":
+    index: 42
+    name: "<red><bold>取消编辑</bold></red>"
+    material: RED_DYE
+    lore:
+      - "<gray>放弃本次未保存的修改。</gray>"
+      - "<red>修改将无法恢复</red>"
+    action: edit-cancel
+    confirm: true
+  "49":
+    index: 49
+    name: "<gray>返回</gray>"
+    material: OAK_DOOR
+    lore:
+      - "<gray>返回赛道管理。</gray>"
+    action: back
+pane:
+  enable: true
+  index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 48, 50, 51, 52, 53]
+  name: §e✧ 闪闪发光的边框 ✧
+  material: WHITE_STAINED_GLASS_PANE
+  lore:
+    - §7嘿嘿嘿～
+    - §7戳我干嘛呀小坏蛋～
+  isEnchant: false
+  custom-model-data: 0
+  hideFlag: true
+  hideEnchant: true

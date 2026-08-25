@@ -21,3 +21,18 @@ permissions:
   boatrace.admin:
     description: Manage BoatRace tracks and rooms
     default: op
+  boatrace.gui:
+    description: Open the BoatRace GUI
+    default: true
+  boatrace.gui.race:
+    description: View race status and leaderboards in the GUI
+    default: true
+  boatrace.gui.control:
+    description: Control active races from the GUI
+    default: op
+  boatrace.gui.track:
+    description: Manage BoatRace tracks from the GUI
+    default: op
+  boatrace.gui.view:
+    description: Edit BoatRace GUI layouts
+    default: op
