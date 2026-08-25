@@ -7,7 +7,7 @@
 
 BoatRace 是一款同时支持 Paper/Folia 1.21.x 与 26.x 的冰船竞速插件。它不生成冰道地图，而是把服务器已经建好的冰船道路配置成可计时、可排名、可开房间的竞速赛道。
 
-作者：cloudfl4re
+作者：cloudfl4re、xWtree
 
 ## 功能概览
 

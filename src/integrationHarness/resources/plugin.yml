@@ -2,7 +2,7 @@ name: BoatRaceIntegrationHarness
 version: '1.2.0'
 main: cn.cloudfl4re.boatrace.harness.BotHarnessPlugin
 description: BoatRace Folia integration harness
-author: cloudfl4re
+author: cloudfl4re, xWtree
 api-version: '1.21'
 folia-supported: true
 commands:
