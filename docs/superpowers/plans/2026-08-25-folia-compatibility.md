@@ -6,7 +6,7 @@
 
 **架构：** 以 Paper 1.21 API 为最低编译基线，保留现有 Folia 调度抽象；运行时仅调用两代核心共有的 Bukkit/Paper/Folia API。将 Java 字节码目标降为 21，使 Java 21 与更高版本均可加载。
 
-**技术栈：** Gradle Kotlin DSL、Paper API 1.21.4、Java 21、JUnit 5、Shadow Jar。
+**技术栈：** Gradle Kotlin DSL、Paper API 1.21.11、Java 21、JUnit 5、Shadow Jar。
 
 ---
 

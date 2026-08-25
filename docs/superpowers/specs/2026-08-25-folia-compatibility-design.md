@@ -10,7 +10,7 @@
 
 ## 构建与元数据
 
-- 将编译期服务端 API 替换为 Paper 1.21 API。
+- 将编译期服务端 API 替换为 Paper 1.21.11 API。
 - Java toolchain 与 `--release` 统一为 21，确保可在 Java 21（1.21 Folia 常用运行时）启动。
 - `plugin.yml` 的 `api-version` 调整为 `1.21`，避免 1.21 服务端拒绝加载；26.x 仍可加载旧版本插件元数据。
 - 更新 README 的支持矩阵、构建命令和运行时要求。

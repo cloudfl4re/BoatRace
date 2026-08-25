@@ -17,7 +17,7 @@ repositories {
 dependencies {
     // Compile against the lowest supported Paper/Folia API. 26.x keeps the
     // Bukkit/Paper API surface backwards compatible, so one jar works on both.
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.12.3")
     implementation("org.xerial:sqlite-jdbc:3.53.2.1") {
         exclude(group = "org.slf4j", module = "slf4j-api")
