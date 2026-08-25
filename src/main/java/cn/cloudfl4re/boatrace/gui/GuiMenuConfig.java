@@ -39,8 +39,8 @@ public record GuiMenuConfig(String name, String title, int size, String permissi
                     throw new IllegalArgumentException("按钮槽位越界: " + index);
                 }
                 String materialName = item.getString("material", "");
-                Material material = Material.matchMaterial(materialName);
-                if (material == null || material.isAir()) {
+                Material material = parseMaterial(materialName);
+                if (material == null) {
                     throw new IllegalArgumentException("无效材质: " + materialName);
                 }
                 GuiAction action = GuiAction.parse(item.getString("action"));
@@ -59,6 +59,14 @@ public record GuiMenuConfig(String name, String title, int size, String permissi
             return Integer.parseInt(key);
         } catch (NumberFormatException ignored) {
             return -1;
+        }
+    }
+
+    private static Material parseMaterial(String raw) {
+        try {
+            return Material.valueOf(raw.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 
@@ -107,8 +115,8 @@ public record GuiMenuConfig(String name, String title, int size, String permissi
                 indexes.add(index);
             }
             String materialName = section.getString("material", "");
-            Material material = Material.matchMaterial(materialName);
-            if (material == null || material.isAir()) {
+            Material material = parseMaterial(materialName);
+            if (material == null) {
                 throw new IllegalArgumentException("无效分隔板材质");
             }
             return new Pane(section.getBoolean("enable", false), indexes,

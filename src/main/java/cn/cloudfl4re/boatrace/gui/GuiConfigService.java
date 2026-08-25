@@ -57,6 +57,14 @@ public final class GuiConfigService {
         return menus();
     }
 
+    public synchronized void initialize() {
+        reload();
+    }
+
+    public synchronized Map<String, GuiMenuConfig> snapshot() {
+        return menus();
+    }
+
     public synchronized GuiMenuConfig load(String name) {
         Objects.requireNonNull(name, "name");
         ensureDefaults();

@@ -19,6 +19,9 @@ public final class RaceSession {
     private long lastActivityNanos;
     private long goNanos;
     private long goEpochMillis;
+    private long pausedNanos;
+    private long pauseStartedNanos;
+    private boolean firstFinisherClaimed;
     private int joinSequence;
     private int finishSequence;
 
@@ -93,6 +96,41 @@ public final class RaceSession {
         return true;
     }
 
+    public synchronized boolean pause(long nowNanos) {
+        if (phase != RacePhase.RUNNING) {
+            return false;
+        }
+        phase = RacePhase.PAUSED;
+        pauseStartedNanos = nowNanos;
+        return true;
+    }
+
+    public synchronized boolean resume(long nowNanos) {
+        if (phase != RacePhase.PAUSED) {
+            return false;
+        }
+        pausedNanos += Math.max(0L, nowNanos - pauseStartedNanos);
+        pauseStartedNanos = 0L;
+        phase = RacePhase.RUNNING;
+        return true;
+    }
+
+    public synchronized boolean claimFirstFinisher() {
+        if (firstFinisherClaimed) {
+            return false;
+        }
+        firstFinisherClaimed = true;
+        return true;
+    }
+
+    public synchronized long elapsedNanos(long nowNanos) {
+        if (goNanos == 0L) {
+            return 0L;
+        }
+        long paused = pausedNanos + (phase == RacePhase.PAUSED ? Math.max(0L, nowNanos - pauseStartedNanos) : 0L);
+        return Math.max(0L, nowNanos - goNanos - paused);
+    }
+
     public synchronized void rollbackStaging(long nowNanos) {
         if (phase != RacePhase.STAGING && phase != RacePhase.COUNTDOWN) {
             return;
@@ -113,6 +151,20 @@ public final class RaceSession {
         }
         participants.put(playerId, current.at(point));
         return true;
+    }
+
+    public synchronized String leaderName() {
+        return participants.values().stream()
+            .filter(value -> value.status() == ParticipantStatus.FINISHED)
+            .min(java.util.Comparator.comparingInt(ParticipantProgress::finishRank))
+            .map(ParticipantProgress::playerName).orElse(null);
+    }
+
+    public synchronized long leaderTimeNanos() {
+        return participants.values().stream()
+            .filter(value -> value.status() == ParticipantStatus.FINISHED)
+            .min(java.util.Comparator.comparingInt(ParticipantProgress::finishRank))
+            .map(ParticipantProgress::finishNanos).orElse(0L);
     }
 
     public synchronized boolean advance(UUID playerId, Point3 point) {

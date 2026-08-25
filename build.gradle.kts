@@ -33,6 +33,8 @@ java {
 val integrationHarness by sourceSets.creating
 
 configurations[integrationHarness.compileOnlyConfigurationName].extendsFrom(configurations.compileOnly.get())
+configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())
+configurations.testRuntimeOnly.get().extendsFrom(configurations.compileOnly.get())
 
 val integrationHarnessJar by tasks.registering(Jar::class) {
     archiveBaseName.set("BoatRace-IntegrationHarness")

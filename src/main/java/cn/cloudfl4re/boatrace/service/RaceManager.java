@@ -32,7 +32,10 @@ import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.meta.FireworkMeta;
+import org.bukkit.FireworkEffect;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
@@ -470,6 +473,35 @@ public final class RaceManager {
         messages.send(sender, "room-cancelled", Map.of("code", code));
     }
 
+    public boolean pause(String rawCode) {
+        RaceSession session = sessions.get(rawCode.toUpperCase());
+        return session != null && session.pause(System.nanoTime());
+    }
+
+    public boolean resume(String rawCode) {
+        RaceSession session = sessions.get(rawCode.toUpperCase());
+        return session != null && session.resume(System.nanoTime());
+    }
+
+    public boolean end(String rawCode) {
+        RaceSession session = sessions.get(rawCode.toUpperCase());
+        if (session == null || session.phase() == RacePhase.WAITING || session.phase() == RacePhase.FINISHED || session.phase() == RacePhase.CANCELLED) {
+            return false;
+        }
+        for (ParticipantProgress participant : session.participants()) {
+            if (!participant.terminal()) {
+                markDnf(session, participant.playerId(), true);
+            }
+        }
+        finishIfComplete(session);
+        return true;
+    }
+
+    public RaceSession sessionFor(UUID playerId) {
+        String code = sessionByPlayer.get(playerId);
+        return code == null ? null : sessions.get(code);
+    }
+
     private void cancelSession(RaceSession session, String messageKey) {
         session.cancelPhase();
         List<ParticipantProgress> participants = session.participants();
@@ -736,6 +768,17 @@ public final class RaceManager {
         }
         removeBoatNow(boat);
         stopUi(driver.getUniqueId());
+        if (finished.get().finishRank() == 1 && session.claimFirstFinisher()) {
+            runForPlayer(driver.getUniqueId(), player -> {
+                Firework firework = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Firework.class);
+                FireworkMeta meta = firework.getFireworkMeta();
+                meta.setPower(1);
+                meta.addEffect(FireworkEffect.builder().with(FireworkEffect.Type.BALL_LARGE)
+                    .withColor(Color.fromRGB(142, 197, 252)).withFade(Color.fromRGB(224, 195, 252)).trail(true).flicker(true).build());
+                firework.setFireworkMeta(meta);
+                messages.send(player, "gui-first-finish");
+            });
+        }
         messages.send(driver, "race-finished", Map.of(
             "rank", String.valueOf(finished.get().finishRank()),
             "time", TimeFormatter.formatNanos(finished.get().finishNanos())
@@ -916,6 +959,13 @@ public final class RaceManager {
             session.resultEntries()
         );
         lastRaces.update(race);
+        RaceResultEntry winner = race.entries().stream().filter(RaceResultEntry::finished).findFirst().orElse(null);
+        if (winner == null) {
+            scheduler.runGlobal(() -> Bukkit.broadcast(messages.component("gui-race-no-winner-broadcast")));
+        } else {
+            scheduler.runGlobal(() -> Bukkit.broadcast(messages.component("gui-race-winner-broadcast", Map.of(
+                "player", winner.playerName(), "time", TimeFormatter.formatNanos(winner.elapsedNanos())))));
+        }
         database.saveLastRace(race).exceptionally(failure -> {
             plugin.getLogger().log(Level.SEVERE, "Failed to save BoatRace result", failure);
             return null;
@@ -1031,6 +1081,13 @@ public final class RaceManager {
         Track track = tracks.get(session.trackId()).orElse(null);
         if (progress == null || track == null || progress.status() != ParticipantStatus.RUNNING || !track.worldId().equals(player.getWorld().getUID())) {
             return;
+        }
+        String leader = session.leaderName();
+        if (leader == null) {
+            player.sendActionBar(messages.unprefixed("gui-leaderboard-empty-actionbar"));
+        } else {
+            player.sendActionBar(messages.unprefixed("gui-leaderboard-actionbar", Map.of(
+                "player", leader, "time", TimeFormatter.formatNanos(session.leaderTimeNanos()))));
         }
         Cuboid target = track.target(progress.nextCheckpoint());
         particles.gate(player, target, progress.nextCheckpoint() < track.checkpoints().size() ? Color.AQUA : Color.LIME);

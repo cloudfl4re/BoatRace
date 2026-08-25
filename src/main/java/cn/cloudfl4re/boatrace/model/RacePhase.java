@@ -5,6 +5,7 @@ public enum RacePhase {
     STAGING,
     COUNTDOWN,
     RUNNING,
+    PAUSED,
     FINISHED,
     CANCELLED
 }

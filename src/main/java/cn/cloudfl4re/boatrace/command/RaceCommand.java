@@ -69,6 +69,7 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
             return true;
         }
         return switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "gui" -> gui(sender, args);
             case "create" -> create(sender);
             case "join" -> join(sender, args);
             case "leave" -> leave(sender);
@@ -85,6 +86,27 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 yield true;
             }
         };
+    }
+
+    private boolean gui(CommandSender sender, String[] args) {
+        Player player = requirePlayer(sender);
+        if (player == null || !player.hasPermission("boatrace.gui")) {
+            if (player != null) messages.send(player, "gui-no-permission");
+            return true;
+        }
+        if (args.length >= 2 && args[1].equalsIgnoreCase("view")) {
+            if (!player.hasPermission("boatrace.gui.view") && !player.hasPermission("boatrace.admin")) {
+                messages.send(player, "gui-no-permission");
+                return true;
+            }
+            String menu = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "main";
+            player.closeInventory();
+            plugin.gui().open(player, menu, true);
+            messages.send(player, "gui-layout-opened");
+            return true;
+        }
+        plugin.gui().open(player, "main");
+        return true;
     }
 
     private boolean create(CommandSender sender) {
@@ -560,7 +582,7 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         List<String> values = new ArrayList<>();
         if (args.length == 1) {
-            values.addAll(List.of("help", "create", "join", "leave", "start", "cancel", "status", "last"));
+            values.addAll(List.of("help", "gui", "create", "join", "leave", "start", "cancel", "status", "last"));
             if (sender.hasPermission("boatrace.admin")) {
                 values.addAll(List.of("track", "edit", "force", "reload"));
             }
@@ -586,6 +608,10 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
             values.addAll(races.sessionSnapshot().keySet());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("last")) {
             values.addAll(tracks.snapshot().keySet());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("gui")) {
+            values.add("view");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("gui") && args[1].equalsIgnoreCase("view")) {
+            values.addAll(plugin.guiConfigs().snapshot().keySet());
         }
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(prefix)).sorted().toList();

@@ -4,6 +4,9 @@ import cn.cloudfl4re.boatrace.command.RaceCommand;
 import cn.cloudfl4re.boatrace.config.MessageService;
 import cn.cloudfl4re.boatrace.config.PluginSettings;
 import cn.cloudfl4re.boatrace.listener.RaceListener;
+import cn.cloudfl4re.boatrace.gui.GuiConfigService;
+import cn.cloudfl4re.boatrace.gui.GuiListener;
+import cn.cloudfl4re.boatrace.gui.GuiService;
 import cn.cloudfl4re.boatrace.papi.BoatRaceExpansion;
 import cn.cloudfl4re.boatrace.persistence.DatabaseService;
 import cn.cloudfl4re.boatrace.scheduler.SchedulerFacade;
@@ -32,6 +35,8 @@ public final class BoatRacePlugin extends JavaPlugin {
     private EditorManager editors;
     private RaceManager races;
     private BoatRaceExpansion expansion;
+    private GuiConfigService guiConfigs;
+    private GuiService gui;
 
     @Override
     public void onEnable() {
@@ -49,6 +54,9 @@ public final class BoatRacePlugin extends JavaPlugin {
         ParticleRenderer particles = new ParticleRenderer(settings::get);
         races = new RaceManager(this, tracks, leaderboards, lastRaces, database, scheduler, messages, settings::get, particles);
         editors = new EditorManager(tracks, database, scheduler, messages, settings::get, particles);
+        guiConfigs = new GuiConfigService(this);
+        guiConfigs.initialize();
+        gui = new GuiService(this, guiConfigs, messages, races);
         RaceCommand raceCommand = new RaceCommand(this);
         PluginCommand command = getCommand("race");
         if (command == null) {
@@ -57,6 +65,7 @@ public final class BoatRacePlugin extends JavaPlugin {
         command.setExecutor(raceCommand);
         command.setTabCompleter(raceCommand);
         getServer().getPluginManager().registerEvents(new RaceListener(races, editors), this);
+        getServer().getPluginManager().registerEvents(new GuiListener(gui), this);
         database.initialize().whenComplete((loaded, failure) -> {
             if (failure != null) {
                 getLogger().log(Level.SEVERE, "BoatRace database initialization failed", failure);
@@ -89,6 +98,7 @@ public final class BoatRacePlugin extends JavaPlugin {
         reloadConfig();
         settings.set(PluginSettings.load(getConfig()));
         messages.reload();
+        if (guiConfigs != null) guiConfigs.reload();
         races.startCleanupTask();
     }
 
@@ -148,4 +158,7 @@ public final class BoatRacePlugin extends JavaPlugin {
     public RaceManager races() {
         return races;
     }
+
+    public GuiConfigService guiConfigs() { return guiConfigs; }
+    public GuiService gui() { return gui; }
 }
