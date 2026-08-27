@@ -1,0 +1,32 @@
+title: "冰船系统 · 操作确认"
+size: 27
+permission: "boatrace.gui"
+menu:
+  "11":
+    index: 11
+    name: "<red><bold>确认操作</bold></red>"
+    material: LIME_CONCRETE
+    lore:
+      - "<gray>确认执行当前危险操作。</gray>"
+      - "<red>此操作可能无法恢复</red>"
+      - "<yellow>点击确认</yellow>"
+    action: confirm
+  "15":
+    index: 15
+    name: "<gray>返回</gray>"
+    material: RED_CONCRETE
+    lore:
+      - "<gray>取消本次操作。</gray>"
+    action: cancel-confirm
+pane:
+  enable: true
+  index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+  name: "<gray>边框</gray>"
+  material: WHITE_STAINED_GLASS_PANE
+  lore:
+    - "<dark_gray>BoatRace</dark_gray>"
+  isEnchant: false
+  custom-model-data: 0
+  hideFlag: true
+  hideEnchant: true
+

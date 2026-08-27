@@ -1,7 +1,7 @@
 package cn.cloudfl4re.boatrace.scheduler;
 
-import io.papermc.paper.ServerBuildInfo;
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
@@ -24,7 +24,12 @@ public final class SchedulerFacade {
 
     private static synchronized void detectFolia() {
         if (folia == null) {
-            folia = ServerBuildInfo.buildInfo().isBrandCompatible(ServerBuildInfo.BRAND_FOLIA_ID);
+            try {
+                Bukkit.getServer().getClass().getMethod("getRegionScheduler");
+                folia = true;
+            } catch (ReflectiveOperationException ignored) {
+                folia = false;
+            }
         }
     }
 

@@ -5,6 +5,7 @@ import cn.cloudfl4re.boatrace.model.LastRace;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class LastRaceService {
@@ -24,6 +25,12 @@ public final class LastRaceService {
 
     public Optional<LastRace> get(String trackId) {
         return Optional.ofNullable(races.get().get(trackId));
+    }
+
+    public Optional<LastRace> latestForPlayer(UUID playerId) {
+        return races.get().values().stream()
+            .filter(race -> race.entries().stream().anyMatch(entry -> entry.playerId().equals(playerId)))
+            .max(java.util.Comparator.comparingLong(LastRace::endedEpochMillis));
     }
 
     public void remove(String trackId) {

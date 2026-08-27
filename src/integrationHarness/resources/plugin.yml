@@ -3,7 +3,7 @@ version: '1.0.0'
 main: cn.cloudfl4re.boatrace.harness.BotHarnessPlugin
 description: BoatRace Lophine integration harness
 author: cloudfl4re
-api-version: '26.2'
+api-version: '${targetApi}'
 folia-supported: true
 commands:
   brtest:

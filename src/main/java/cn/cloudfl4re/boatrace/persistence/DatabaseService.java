@@ -2,6 +2,8 @@ package cn.cloudfl4re.boatrace.persistence;
 
 import cn.cloudfl4re.boatrace.model.Cuboid;
 import cn.cloudfl4re.boatrace.model.LastRace;
+import cn.cloudfl4re.boatrace.model.PersonalTrialStat;
+import cn.cloudfl4re.boatrace.model.PlayerPenalty;
 import cn.cloudfl4re.boatrace.model.RaceResultEntry;
 import cn.cloudfl4re.boatrace.model.StartSlot;
 import cn.cloudfl4re.boatrace.model.Track;
@@ -81,8 +83,18 @@ public final class DatabaseService {
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS trial_bests (track_id TEXT NOT NULL, player_uuid TEXT NOT NULL, player_name TEXT NOT NULL, best_nanos INTEGER NOT NULL, achieved_at INTEGER NOT NULL, PRIMARY KEY(track_id, player_uuid), FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE)");
             statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_trial_bests_rank ON trial_bests(track_id, best_nanos, achieved_at)");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS last_races (track_id TEXT PRIMARY KEY, code TEXT NOT NULL, started_at INTEGER NOT NULL, ended_at INTEGER NOT NULL, FOREIGN KEY(track_id) REFERENCES tracks(id) ON DELETE CASCADE)");
-            statement.executeUpdate("CREATE TABLE IF NOT EXISTS last_race_results (track_id TEXT NOT NULL, position INTEGER NOT NULL, player_uuid TEXT NOT NULL, player_name TEXT NOT NULL, rank_value INTEGER NOT NULL, elapsed_nanos INTEGER NOT NULL, finished INTEGER NOT NULL, PRIMARY KEY(track_id, position), FOREIGN KEY(track_id) REFERENCES last_races(track_id) ON DELETE CASCADE)");
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS last_race_results (track_id TEXT NOT NULL, position INTEGER NOT NULL, player_uuid TEXT NOT NULL, player_name TEXT NOT NULL, rank_value INTEGER NOT NULL, elapsed_nanos INTEGER NOT NULL, finished INTEGER NOT NULL, completed_laps INTEGER NOT NULL DEFAULT 0, total_laps INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(track_id, position), FOREIGN KEY(track_id) REFERENCES last_races(track_id) ON DELETE CASCADE)");
+            addColumnIfMissing(statement, "last_race_results", "completed_laps", "INTEGER NOT NULL DEFAULT 0");
+            addColumnIfMissing(statement, "last_race_results", "total_laps", "INTEGER NOT NULL DEFAULT 0");
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS owned_boats (entity_uuid TEXT PRIMARY KEY, created_at INTEGER NOT NULL)");
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS player_penalties (player_uuid TEXT PRIMARY KEY, player_name TEXT NOT NULL, violation_count INTEGER NOT NULL DEFAULT 0, cooldown_until INTEGER NOT NULL DEFAULT 0, admin_banned INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL)");
+        }
+    }
+
+    private static void addColumnIfMissing(Statement statement, String table, String column, String definition) {
+        try {
+            statement.executeUpdate("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        } catch (SQLException ignored) {
         }
     }
 
@@ -134,6 +146,7 @@ public final class DatabaseService {
         Map<String, Track> tracks = new LinkedHashMap<>();
         builders.forEach((id, builder) -> tracks.put(id, builder.build()));
         Map<String, List<TrialRecord>> leaderboards = loadLeaderboards();
+        Map<String, Integer> leaderboardRecordCounts = loadLeaderboardRecordCounts();
         Map<String, LastRace> lastRaces = loadLastRaces();
         Set<UUID> ownedBoats = new HashSet<>();
         try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT entity_uuid FROM owned_boats")) {
@@ -141,7 +154,30 @@ public final class DatabaseService {
                 ownedBoats.add(UUID.fromString(result.getString(1)));
             }
         }
-        return new LoadedData(Map.copyOf(tracks), immutableLists(leaderboards), Map.copyOf(lastRaces), Set.copyOf(ownedBoats));
+        Map<UUID, PlayerPenalty> penalties = loadPenalties();
+        return new LoadedData(Map.copyOf(tracks), immutableLists(leaderboards), Map.copyOf(leaderboardRecordCounts), Map.copyOf(lastRaces), Set.copyOf(ownedBoats), Map.copyOf(penalties));
+    }
+
+    private Map<UUID, PlayerPenalty> loadPenalties() throws SQLException {
+        Map<UUID, PlayerPenalty> values = new HashMap<>();
+        try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT player_uuid, player_name, violation_count, cooldown_until, admin_banned FROM player_penalties")) {
+            while (result.next()) {
+                UUID playerId;
+                try {
+                    playerId = UUID.fromString(result.getString("player_uuid"));
+                } catch (IllegalArgumentException ignored) {
+                    continue;
+                }
+                values.put(playerId, new PlayerPenalty(
+                    playerId,
+                    result.getString("player_name"),
+                    result.getInt("violation_count"),
+                    result.getLong("cooldown_until"),
+                    result.getInt("admin_banned") != 0
+                ));
+            }
+        }
+        return values;
     }
 
     private Map<String, List<TrialRecord>> loadLeaderboards() throws SQLException {
@@ -149,7 +185,7 @@ public final class DatabaseService {
         try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT track_id, player_uuid, player_name, best_nanos, achieved_at FROM trial_bests ORDER BY track_id, best_nanos, achieved_at, player_uuid")) {
             while (result.next()) {
                 List<TrialRecord> records = values.computeIfAbsent(result.getString("track_id"), ignored -> new ArrayList<>());
-                if (records.size() < 7) {
+                if (records.size() < 15) {
                     records.add(new TrialRecord(
                         UUID.fromString(result.getString("player_uuid")),
                         result.getString("player_name"),
@@ -157,6 +193,16 @@ public final class DatabaseService {
                         result.getLong("achieved_at")
                     ));
                 }
+            }
+        }
+        return values;
+    }
+
+    private Map<String, Integer> loadLeaderboardRecordCounts() throws SQLException {
+        Map<String, Integer> values = new HashMap<>();
+        try (Statement statement = connection.createStatement(); ResultSet result = statement.executeQuery("SELECT track_id, COUNT(*) FROM trial_bests GROUP BY track_id")) {
+            while (result.next()) {
+                values.put(result.getString(1), result.getInt(2));
             }
         }
         return values;
@@ -181,7 +227,9 @@ public final class DatabaseService {
                     result.getString("player_name"),
                     result.getInt("rank_value"),
                     result.getLong("elapsed_nanos"),
-                    result.getInt("finished") != 0
+                    result.getInt("finished") != 0,
+                    result.getInt("completed_laps"),
+                    result.getInt("total_laps")
                 ));
             }
         }
@@ -309,9 +357,10 @@ public final class DatabaseService {
                         statement.executeUpdate();
                     }
                 }
-                List<TrialRecord> top = queryTopSeven(trackId);
+                List<TrialRecord> top = queryTopFifteen(trackId);
+                int recordCount = queryRecordCount(trackId);
                 connection.commit();
-                return new TrialSaveResult(personalBest, previous, top);
+                return new TrialSaveResult(personalBest, previous, top, recordCount);
             } catch (Throwable throwable) {
                 connection.rollback();
                 throw throwable;
@@ -321,9 +370,57 @@ public final class DatabaseService {
         });
     }
 
-    private List<TrialRecord> queryTopSeven(String trackId) throws SQLException {
+    public CompletableFuture<TrialDeleteResult> deleteTrialRecord(String trackId, String playerReference) {
+        return submit(() -> {
+            boolean original = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                String reference = playerReference == null ? "" : playerReference.trim();
+                String uuidReference;
+                try {
+                    uuidReference = UUID.fromString(reference).toString();
+                } catch (IllegalArgumentException exception) {
+                    uuidReference = "";
+                }
+                String playerUuid = null;
+                try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT player_uuid FROM trial_bests WHERE track_id=? AND (player_uuid=? OR player_name COLLATE NOCASE=?) ORDER BY best_nanos, achieved_at, player_uuid LIMIT 1"
+                )) {
+                    statement.setString(1, trackId);
+                    statement.setString(2, uuidReference);
+                    statement.setString(3, reference);
+                    try (ResultSet result = statement.executeQuery()) {
+                        if (result.next()) {
+                            playerUuid = result.getString(1);
+                        }
+                    }
+                }
+                int deleted = 0;
+                if (playerUuid != null) {
+                    try (PreparedStatement statement = connection.prepareStatement(
+                        "DELETE FROM trial_bests WHERE track_id=? AND player_uuid=?"
+                    )) {
+                        statement.setString(1, trackId);
+                        statement.setString(2, playerUuid);
+                        deleted = statement.executeUpdate();
+                    }
+                }
+                List<TrialRecord> top = queryTopFifteen(trackId);
+                int recordCount = queryRecordCount(trackId);
+                connection.commit();
+                return new TrialDeleteResult(deleted, top, recordCount);
+            } catch (Throwable throwable) {
+                connection.rollback();
+                throw throwable;
+            } finally {
+                connection.setAutoCommit(original);
+            }
+        });
+    }
+
+    private List<TrialRecord> queryTopFifteen(String trackId) throws SQLException {
         List<TrialRecord> values = new ArrayList<>();
-        try (PreparedStatement statement = connection.prepareStatement("SELECT player_uuid, player_name, best_nanos, achieved_at FROM trial_bests WHERE track_id=? ORDER BY best_nanos, achieved_at, player_uuid LIMIT 7")) {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT player_uuid, player_name, best_nanos, achieved_at FROM trial_bests WHERE track_id=? ORDER BY best_nanos, achieved_at, player_uuid LIMIT 15")) {
             statement.setString(1, trackId);
             try (ResultSet result = statement.executeQuery()) {
                 while (result.next()) {
@@ -337,6 +434,58 @@ public final class DatabaseService {
             }
         }
         return List.copyOf(values);
+    }
+
+    private int queryRecordCount(String trackId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM trial_bests WHERE track_id=?")) {
+            statement.setString(1, trackId);
+            try (ResultSet result = statement.executeQuery()) {
+                return result.next() ? result.getInt(1) : 0;
+            }
+        }
+    }
+
+    /**
+     * Resolves a player's own trial best on a track together with its rank. Completes with
+     * {@code null} when the player has no record there.
+     */
+    public CompletableFuture<PersonalTrialStat> findPersonalTrial(String trackId, UUID playerId) {
+        return submit(() -> {
+            String playerUuid = playerId.toString();
+            String playerName = null;
+            long bestNanos = 0L;
+            long achievedAt = 0L;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT player_name, best_nanos, achieved_at FROM trial_bests WHERE track_id=? AND player_uuid=?")) {
+                statement.setString(1, trackId);
+                statement.setString(2, playerUuid);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        playerName = result.getString(1);
+                        bestNanos = result.getLong(2);
+                        achievedAt = result.getLong(3);
+                    }
+                }
+            }
+            if (playerName == null) {
+                return null;
+            }
+            // Mirrors the ORDER BY used by the leaderboard queries so both agree on ties.
+            int ahead = 0;
+            try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM trial_bests WHERE track_id=? AND (best_nanos<? OR (best_nanos=? AND (achieved_at<? OR (achieved_at=? AND player_uuid<?))))"
+            )) {
+                statement.setString(1, trackId);
+                statement.setLong(2, bestNanos);
+                statement.setLong(3, bestNanos);
+                statement.setLong(4, achievedAt);
+                statement.setLong(5, achievedAt);
+                statement.setString(6, playerUuid);
+                try (ResultSet result = statement.executeQuery()) {
+                    ahead = result.next() ? result.getInt(1) : 0;
+                }
+            }
+            return new PersonalTrialStat(trackId, playerId, playerName, bestNanos, achievedAt, ahead + 1, queryRecordCount(trackId));
+        });
     }
 
     public CompletableFuture<Void> saveLastRace(LastRace race) {
@@ -355,7 +504,7 @@ public final class DatabaseService {
                     statement.setString(1, race.trackId());
                     statement.executeUpdate();
                 }
-                try (PreparedStatement statement = connection.prepareStatement("INSERT INTO last_race_results(track_id, position, player_uuid, player_name, rank_value, elapsed_nanos, finished) VALUES(?,?,?,?,?,?,?)")) {
+                try (PreparedStatement statement = connection.prepareStatement("INSERT INTO last_race_results(track_id, position, player_uuid, player_name, rank_value, elapsed_nanos, finished, completed_laps, total_laps) VALUES(?,?,?,?,?,?,?,?,?)")) {
                     for (int index = 0; index < race.entries().size(); index++) {
                         RaceResultEntry entry = race.entries().get(index);
                         statement.setString(1, race.trackId());
@@ -365,6 +514,8 @@ public final class DatabaseService {
                         statement.setInt(5, entry.rank());
                         statement.setLong(6, entry.elapsedNanos());
                         statement.setInt(7, entry.finished() ? 1 : 0);
+                        statement.setInt(8, entry.completedLaps());
+                        statement.setInt(9, entry.totalLaps());
                         statement.addBatch();
                     }
                     statement.executeBatch();
@@ -396,6 +547,62 @@ public final class DatabaseService {
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM owned_boats WHERE entity_uuid=?")) {
                 statement.setString(1, boatId.toString());
                 statement.executeUpdate();
+            }
+            return null;
+        });
+    }
+
+    public CompletableFuture<Void> savePenalty(PlayerPenalty penalty) {
+        return submit(() -> {
+            try (PreparedStatement statement = connection.prepareStatement(
+                "INSERT INTO player_penalties(player_uuid, player_name, violation_count, cooldown_until, admin_banned, updated_at) VALUES(?,?,?,?,?,?) "
+                    + "ON CONFLICT(player_uuid) DO UPDATE SET player_name=excluded.player_name, violation_count=excluded.violation_count, cooldown_until=excluded.cooldown_until, admin_banned=excluded.admin_banned, updated_at=excluded.updated_at"
+            )) {
+                statement.setString(1, penalty.playerId().toString());
+                statement.setString(2, penalty.playerName());
+                statement.setInt(3, penalty.violationCount());
+                statement.setLong(4, penalty.cooldownUntilEpochMillis());
+                statement.setInt(5, penalty.adminBanned() ? 1 : 0);
+                statement.setLong(6, System.currentTimeMillis());
+                statement.executeUpdate();
+            }
+            return null;
+        });
+    }
+
+    public CompletableFuture<Void> deletePenalty(UUID playerId) {
+        return submit(() -> {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM player_penalties WHERE player_uuid=?")) {
+                statement.setString(1, playerId.toString());
+                statement.executeUpdate();
+            }
+            return null;
+        });
+    }
+
+    public CompletableFuture<UUID> findPlayerIdByName(String playerName) {
+        return submit(() -> {
+            String reference = playerName == null ? "" : playerName.trim();
+            if (reference.isEmpty()) {
+                return null;
+            }
+            String[] queries = {
+                "SELECT player_uuid FROM player_penalties WHERE player_name COLLATE NOCASE=? LIMIT 1",
+                "SELECT player_uuid FROM trial_bests WHERE player_name COLLATE NOCASE=? LIMIT 1",
+                "SELECT player_uuid FROM last_race_results WHERE player_name COLLATE NOCASE=? LIMIT 1"
+            };
+            for (String query : queries) {
+                try (PreparedStatement statement = connection.prepareStatement(query)) {
+                    statement.setString(1, reference);
+                    try (ResultSet result = statement.executeQuery()) {
+                        if (result.next()) {
+                            try {
+                                return UUID.fromString(result.getString(1));
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
+                    }
+                }
             }
             return null;
         });

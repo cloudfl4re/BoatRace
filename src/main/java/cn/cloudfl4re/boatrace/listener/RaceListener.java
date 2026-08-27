@@ -41,7 +41,10 @@ public final class RaceListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerMove(PlayerMoveEvent event) {
-        if (races.isStaged(event.getPlayer().getUniqueId()) && !event.getPlayer().isInsideVehicle()) {
+        if (races.isSpectator(event.getPlayer().getUniqueId())
+            && races.shouldBlockSpectatorMove(event.getPlayer().getUniqueId(), event.getTo())) {
+            event.setCancelled(true);
+        } else if (races.isStaged(event.getPlayer().getUniqueId()) && !event.getPlayer().isInsideVehicle()) {
             event.setCancelled(true);
         }
     }
@@ -96,7 +99,7 @@ public final class RaceListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
-        races.handleJoin(event.getPlayer().getUniqueId());
+        races.handleJoin(event.getPlayer().getUniqueId(), event.getPlayer().getName());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
