@@ -29,6 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -54,11 +56,11 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 0 || args[0].equalsIgnoreCase("help")) {
-            for (String key : List.of("help-header", "help-create", "help-join", "help-start", "help-leave", "help-cancel", "help-status", "help-last", "help-trial")) {
+            for (String key : List.of("help-header", "help-gui", "help-create", "help-join", "help-laps", "help-start", "help-leave", "help-cancel", "help-status-name", "help-spec-name", "help-rank", "help-last", "help-trial")) {
                 messages.send(sender, key);
             }
             if (sender.hasPermission("boatrace.admin")) {
-                for (String key : List.of("help-admin-header", "help-track", "help-selection", "help-start-gate", "help-checkpoint", "help-slot", "help-save", "help-force")) {
+                for (String key : List.of("help-admin-header", "help-track", "help-selection", "help-start-gate", "help-checkpoint", "help-slot", "help-save", "help-force", "help-trial-delete", "help-admin-penalty")) {
                     messages.send(sender, key);
                 }
             }
@@ -72,14 +74,19 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
             case "gui" -> gui(sender, args);
             case "create" -> create(sender);
             case "join" -> join(sender, args);
+            case "laps" -> laps(sender, args);
             case "leave" -> leave(sender);
             case "start" -> start(sender);
             case "cancel" -> cancel(sender);
             case "status" -> status(sender);
+            case "spec" -> spec(sender, args);
+            case "rank" -> rank(sender);
             case "last" -> last(sender, args);
+            case "trial" -> trial(sender, args);
             case "track" -> track(sender, args);
             case "edit" -> edit(sender, args);
             case "force" -> force(sender, args);
+            case "admin" -> admin(sender, args);
             case "reload" -> reload(sender);
             default -> {
                 messages.send(sender, "unknown-command");
@@ -90,8 +97,11 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
 
     private boolean gui(CommandSender sender, String[] args) {
         Player player = requirePlayer(sender);
-        if (player == null || !player.hasPermission("boatrace.gui")) {
-            if (player != null) messages.send(player, "gui-no-permission");
+        if (player == null) {
+            return true;
+        }
+        if (!player.hasPermission("boatrace.gui")) {
+            messages.send(player, "gui-no-permission");
             return true;
         }
         if (args.length >= 2 && args[1].equalsIgnoreCase("view")) {
@@ -100,6 +110,10 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 return true;
             }
             String menu = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "main";
+            if (plugin.guiConfigs() == null || plugin.guiConfigs().get(menu) == null) {
+                messages.send(player, "gui-invalid-menu");
+                return true;
+            }
             player.closeInventory();
             plugin.gui().open(player, menu, true);
             messages.send(player, "gui-layout-opened");
@@ -130,6 +144,24 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 races.joinRoom(player, args[1]);
             }
         }
+        return true;
+    }
+
+    private boolean laps(CommandSender sender, String[] args) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+        if (args.length < 2) {
+            messages.send(player, "invalid-laps", Map.of("max", String.valueOf(RaceManager.MAX_FORMAL_LAPS)));
+            return true;
+        }
+        Integer value = parseInteger(args[1]);
+        if (value == null) {
+            messages.send(player, "invalid-laps", Map.of("max", String.valueOf(RaceManager.MAX_FORMAL_LAPS)));
+            return true;
+        }
+        races.configureLaps(player, value);
         return true;
     }
 
@@ -165,6 +197,45 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
         return true;
     }
 
+    private boolean spec(CommandSender sender, String[] args) {
+        Player player = requirePlayer(sender);
+        if (player == null) {
+            return true;
+        }
+        if (args.length < 2) {
+            messages.send(player, "spectator-usage-name");
+            return true;
+        }
+        if (args[1].equalsIgnoreCase("join")) {
+            if (args.length < 3) {
+                messages.send(player, "spectator-usage-name");
+            } else {
+                races.joinSpectator(player, args[2]);
+            }
+        } else if (args[1].equalsIgnoreCase("leave")) {
+            if (!races.leaveSpectator(player)) {
+                messages.send(player, "spectator-not-active");
+            }
+        } else if (args[1].equalsIgnoreCase("tp")) {
+            if (args.length < 3) {
+                messages.send(player, "spectator-usage-name");
+            } else {
+                races.teleportSpectator(player, args[2]);
+            }
+        } else {
+            messages.send(player, "spectator-usage-name");
+        }
+        return true;
+    }
+
+    private boolean rank(CommandSender sender) {
+        Player player = requirePlayer(sender);
+        if (player != null) {
+            races.rank(player);
+        }
+        return true;
+    }
+
     private boolean last(CommandSender sender, String[] args) {
         Track track = null;
         if (args.length >= 2) {
@@ -191,9 +262,57 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                     "time", TimeFormatter.formatNanos(entry.elapsedNanos())
                 ));
             } else {
-                messages.send(sender, "race-results-dnf", Map.of("player", entry.playerName()));
+                messages.send(sender, "race-results-dnf", Map.of(
+                    "player", entry.playerName(),
+                    "laps", String.valueOf(entry.completedLaps()),
+                    "total", String.valueOf(entry.totalLaps()),
+                    "time", TimeFormatter.formatNanos(entry.elapsedNanos())
+                ));
             }
         }
+        return true;
+    }
+
+    private boolean trial(CommandSender sender, String[] args) {
+        if (!admin(sender)) {
+            return true;
+        }
+        if (args.length < 2 || !args[1].equalsIgnoreCase("delete")) {
+            messages.send(sender, "trial-record-delete-usage");
+            return true;
+        }
+        return deleteTrialRecord(sender, args, 2);
+    }
+
+    private boolean deleteTrialRecord(CommandSender sender, String[] args, int trackIndex) {
+        int playerIndex = trackIndex + 1;
+        if (args.length <= playerIndex || !"confirm".equalsIgnoreCase(args.length > playerIndex + 1 ? args[playerIndex + 1] : "")) {
+            messages.send(sender, "trial-record-delete-usage");
+            return true;
+        }
+        String trackId = args[trackIndex].toLowerCase(Locale.ROOT);
+        String playerReference = args[playerIndex].trim();
+        if (tracks.get(trackId).isEmpty()) {
+            messages.send(sender, "track-not-found", Map.of("track", trackId));
+            return true;
+        }
+        UUID replyPlayer = sender instanceof Player player ? player.getUniqueId() : null;
+        boolean replyConsole = sender instanceof ConsoleCommandSender;
+        plugin.database().deleteTrialRecord(trackId, playerReference).whenComplete((result, failure) -> {
+            if (failure != null) {
+                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Failed to delete BoatRace trial record", failure);
+                reply(replyPlayer, replyConsole, "database-error", Map.of());
+                return;
+            }
+            leaderboards.update(trackId, result.topRecords(), result.recordCount());
+            plugin.personalStats().invalidate(trackId);
+            String messageKey = result.removed() ? "trial-record-deleted" : "trial-record-not-found";
+            reply(replyPlayer, replyConsole, messageKey, Map.of(
+                "track", trackId,
+                "player", playerReference,
+                "count", String.valueOf(result.deletedCount())
+            ));
+        });
         return true;
     }
 
@@ -326,6 +445,7 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
             }
             tracks.remove(id);
             leaderboards.remove(id);
+            plugin.personalStats().invalidate(id);
             lastRaces.remove(id);
             reply(replyPlayer, replyConsole, "track-deleted", Map.of("track", id));
         });
@@ -503,6 +623,19 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 races.startByAdmin(sender, args[2]);
                 yield true;
             }
+            case "laps" -> {
+                if (args.length < 4) {
+                    messages.send(sender, "unknown-command");
+                    yield true;
+                }
+                Integer value = parseInteger(args[3]);
+                if (value == null) {
+                    messages.send(sender, "invalid-laps", Map.of("max", String.valueOf(RaceManager.MAX_FORMAL_LAPS)));
+                } else {
+                    races.configureLapsByAdmin(sender, args[2], value);
+                }
+                yield true;
+            }
             case "cancel" -> {
                 races.cancelByAdmin(sender, args[2]);
                 yield true;
@@ -517,11 +650,93 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 }
                 yield true;
             }
+            case "delete-trial", "trial-delete" -> {
+                yield deleteTrialRecord(sender, args, 2);
+            }
             default -> {
                 messages.send(sender, "unknown-command");
                 yield true;
             }
         };
+    }
+
+    private boolean admin(CommandSender sender, String[] args) {
+        if (!admin(sender)) {
+            return true;
+        }
+        if (args.length < 2) {
+            messages.send(sender, "unknown-command");
+            return true;
+        }
+        return switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "ban" -> adminBan(sender, args);
+            case "unban" -> adminUnban(sender, args);
+            default -> {
+                messages.send(sender, "unknown-command");
+                yield true;
+            }
+        };
+    }
+
+    private boolean adminBan(CommandSender sender, String[] args) {
+        if (args.length < 4 || (!args[3].equalsIgnoreCase("true") && !args[3].equalsIgnoreCase("false"))) {
+            messages.send(sender, "penalty-admin-ban-usage");
+            return true;
+        }
+        String reference = args[2].trim();
+        boolean announce = Boolean.parseBoolean(args[3]);
+        resolveTarget(reference, targetId -> {
+            if (targetId == null) {
+                sendSender(sender, "penalty-target-not-found", Map.<String, String>of());
+                return;
+            }
+            String playerName = plugin.penalties().displayName(targetId, reference);
+            plugin.penalties().adminBan(targetId, playerName);
+            plugin.scheduler().runGlobal(() -> {
+                races.enforcePenalty(targetId);
+                if (announce) {
+                    Bukkit.broadcast(messages.unprefixed("admin-ban-announcement", Map.of("player", playerName)));
+                }
+            });
+            sendSender(sender, "penalty-admin-ban-success", Map.of("player", playerName));
+        });
+        return true;
+    }
+
+    private boolean adminUnban(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            messages.send(sender, "penalty-admin-unban-usage");
+            return true;
+        }
+        String reference = args[2].trim();
+        resolveTarget(reference, targetId -> {
+            if (targetId == null) {
+                sendSender(sender, "penalty-target-not-found", Map.<String, String>of());
+                return;
+            }
+            String playerName = plugin.penalties().displayName(targetId, reference);
+            boolean removed = plugin.penalties().unban(targetId);
+            sendSender(sender, removed ? "penalty-admin-unban-success" : "penalty-admin-unban-not-found", Map.of("player", playerName));
+        });
+        return true;
+    }
+
+    private void resolveTarget(String reference, Consumer<UUID> callback) {
+        UUID known = plugin.penalties().resolveReference(reference);
+        if (known != null) {
+            callback.accept(known);
+            return;
+        }
+        plugin.scheduler().runGlobal(() -> {
+            Player online = Bukkit.getPlayerExact(reference);
+            if (online != null) {
+                callback.accept(online.getUniqueId());
+                return;
+            }
+            plugin.database().findPlayerIdByName(reference).whenComplete((resolved, failure) ->
+                plugin.scheduler().runGlobal(() -> callback.accept(failure == null ? resolved : null))
+            );
+        });
     }
 
     private boolean reload(CommandSender sender) {
@@ -564,6 +779,14 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
         }
     }
 
+    private void sendSender(CommandSender sender, String key, Map<String, String> values) {
+        if (sender instanceof Player player) {
+            runForPlayer(player.getUniqueId(), owned -> messages.send(owned, key, values));
+        } else {
+            plugin.scheduler().runGlobal(() -> messages.send(sender, key, values));
+        }
+    }
+
     private void runForPlayer(UUID playerId, Consumer<Player> action) {
         plugin.scheduler().runGlobal(() -> {
             Player player = Bukkit.getPlayer(playerId);
@@ -582,9 +805,15 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
         List<String> values = new ArrayList<>();
         if (args.length == 1) {
-            values.addAll(List.of("help", "gui", "create", "join", "leave", "start", "cancel", "status", "last"));
+            values.addAll(List.of("help", "gui", "create", "join", "laps", "leave", "start", "cancel", "status", "spec", "rank", "last"));
             if (sender.hasPermission("boatrace.admin")) {
-                values.addAll(List.of("track", "edit", "force", "reload"));
+            values.addAll(List.of("trial", "track", "edit", "force", "admin", "reload"));
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("gui")) {
+            values.add("view");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("gui") && args[1].equalsIgnoreCase("view")) {
+            if (plugin.guiConfigs() != null) {
+                values.addAll(plugin.guiConfigs().snapshot().keySet());
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("track")) {
             values.addAll(List.of("create", "edit", "list", "info", "delete"));
@@ -599,13 +828,38 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
         } else if (args.length == 3 && args[0].equalsIgnoreCase("edit") && args[1].equalsIgnoreCase("preview")) {
             values.addAll(List.of("on", "off"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("force")) {
-            values.addAll(List.of("start", "cancel", "stoptrial"));
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("force") && args[1].equalsIgnoreCase("stoptrial")) {
+            values.addAll(List.of("start", "laps", "cancel", "stoptrial", "delete-trial", "trial-delete"));
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("trial")) {
+            values.add("delete");
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
+            values.addAll(List.of("ban", "unban"));
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("admin")
+            && (args[1].equalsIgnoreCase("ban") || args[1].equalsIgnoreCase("unban"))) {
+            values.addAll(playerSuggestions());
+        } else if (args.length == 4 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("ban")) {
+            values.addAll(List.of("true", "false"));
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("trial") && args[1].equalsIgnoreCase("delete")) {
             values.addAll(tracks.snapshot().keySet());
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("force") && (args[1].equalsIgnoreCase("start") || args[1].equalsIgnoreCase("cancel"))) {
+        } else if (args.length == 4 && args[0].equalsIgnoreCase("trial") && args[1].equalsIgnoreCase("delete")) {
+            values.addAll(playerSuggestions());
+        } else if (args.length == 5 && args[0].equalsIgnoreCase("trial") && args[1].equalsIgnoreCase("delete")) {
+            values.add("confirm");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("force") && (args[1].equalsIgnoreCase("stoptrial") || args[1].equalsIgnoreCase("delete-trial") || args[1].equalsIgnoreCase("trial-delete"))) {
+            values.addAll(tracks.snapshot().keySet());
+        } else if (args.length == 4 && args[0].equalsIgnoreCase("force") && (args[1].equalsIgnoreCase("delete-trial") || args[1].equalsIgnoreCase("trial-delete"))) {
+            values.addAll(playerSuggestions());
+        } else if (args.length == 5 && args[0].equalsIgnoreCase("force") && (args[1].equalsIgnoreCase("delete-trial") || args[1].equalsIgnoreCase("trial-delete"))) {
+            values.add("confirm");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("force") && (args[1].equalsIgnoreCase("start") || args[1].equalsIgnoreCase("laps") || args[1].equalsIgnoreCase("cancel"))) {
             values.addAll(races.sessionSnapshot().keySet());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("join")) {
             values.addAll(races.sessionSnapshot().keySet());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("spec")) {
+            values.addAll(List.of("join", "tp", "leave"));
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("spec") && args[1].equalsIgnoreCase("join")) {
+            values.addAll(races.sessionSnapshot().keySet());
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("spec") && args[1].equalsIgnoreCase("tp") && sender instanceof Player player) {
+            values.addAll(races.spectatorTargetNames(player));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("last")) {
             values.addAll(tracks.snapshot().keySet());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("gui")) {
@@ -615,5 +869,39 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
         }
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(prefix)).sorted().toList();
+    }
+
+    private List<String> playerSuggestions() {
+        Set<String> values = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        Bukkit.getOnlinePlayers().forEach(player -> addPlayerSuggestion(values, player.getName()));
+        races.sessionSnapshot().values().forEach(session ->
+            session.participants().forEach(participant -> addPlayerSuggestion(values, participant.playerName()))
+        );
+        plugin.penalties().snapshot().values().forEach(penalty -> addPlayerSuggestion(values, penalty.playerName()));
+        tracks.snapshot().keySet().forEach(trackId ->
+            leaderboards.top(trackId).forEach(record -> addPlayerSuggestion(values, record.playerName()))
+        );
+        return List.copyOf(values);
+    }
+
+    private static void addPlayerSuggestion(Set<String> values, String candidate) {
+        if (candidate == null || candidate.isBlank()) {
+            return;
+        }
+        String name = candidate.trim();
+        try {
+            UUID.fromString(name);
+            return;
+        } catch (IllegalArgumentException ignored) {
+        }
+        values.add(name);
+    }
+
+    private static Integer parseInteger(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 }

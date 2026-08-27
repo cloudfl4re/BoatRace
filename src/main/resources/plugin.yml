@@ -1,9 +1,9 @@
 name: BoatRace
 version: "${version}"
 main: cn.cloudfl4re.boatrace.BoatRacePlugin
-description: Folia 1.21.x/26.x ice boat racing and time trial plugin
-author: cloudfl4re, xWtree
-api-version: '1.21'
+description: Lophine/Folia ${targetApi} ice boat racing and time trial plugin
+authors: [cloudfl4re, xWtree]
+api-version: '${targetApi}'
 folia-supported: true
 softdepend: [PlaceholderAPI]
 commands:

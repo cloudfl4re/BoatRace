@@ -7,6 +7,11 @@ public record RaceResultEntry(
     String playerName,
     int rank,
     long elapsedNanos,
-    boolean finished
+    boolean finished,
+    int completedLaps,
+    int totalLaps
 ) {
+    public RaceResultEntry(UUID playerId, String playerName, int rank, long elapsedNanos, boolean finished) {
+        this(playerId, playerName, rank, elapsedNanos, finished, 0, 0);
+    }
 }

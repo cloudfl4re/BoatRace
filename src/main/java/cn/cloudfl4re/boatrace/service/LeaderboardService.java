@@ -9,24 +9,43 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class LeaderboardService {
-    private final AtomicReference<Map<String, List<TrialRecord>>> leaderboards = new AtomicReference<>(Map.of());
+    private final AtomicReference<State> state = new AtomicReference<>(new State(Map.of(), Map.of()));
 
     public void load(Map<String, List<TrialRecord>> values) {
+        Map<String, Integer> counts = new HashMap<>();
+        values.forEach((key, value) -> counts.put(key, value.size()));
+        load(values, counts);
+    }
+
+    public void load(Map<String, List<TrialRecord>> values, Map<String, Integer> recordCounts) {
         Map<String, List<TrialRecord>> copy = new HashMap<>();
         values.forEach((key, value) -> copy.put(key, List.copyOf(value)));
-        leaderboards.set(Map.copyOf(copy));
+        Map<String, Integer> counts = new HashMap<>();
+        recordCounts.forEach((key, value) -> counts.put(key, Math.max(0, value)));
+        copy.forEach((key, value) -> counts.putIfAbsent(key, value.size()));
+        state.set(new State(Map.copyOf(copy), Map.copyOf(counts)));
     }
 
     public void update(String trackId, List<TrialRecord> values) {
-        leaderboards.updateAndGet(current -> {
-            Map<String, List<TrialRecord>> copy = new HashMap<>(current);
+        update(trackId, values, values.size());
+    }
+
+    public void update(String trackId, List<TrialRecord> values, int recordCount) {
+        state.updateAndGet(current -> {
+            Map<String, List<TrialRecord>> copy = new HashMap<>(current.leaderboards());
             copy.put(trackId, List.copyOf(values));
-            return Map.copyOf(copy);
+            Map<String, Integer> counts = new HashMap<>(current.recordCounts());
+            counts.put(trackId, Math.max(0, recordCount));
+            return new State(Map.copyOf(copy), Map.copyOf(counts));
         });
     }
 
     public List<TrialRecord> top(String trackId) {
-        return leaderboards.get().getOrDefault(trackId, List.of());
+        return state.get().leaderboards().getOrDefault(trackId, List.of());
+    }
+
+    public int recordCount(String trackId) {
+        return state.get().recordCounts().getOrDefault(trackId, 0);
     }
 
     public Optional<TrialRecord> at(String trackId, int rank) {
@@ -35,10 +54,18 @@ public final class LeaderboardService {
     }
 
     public void remove(String trackId) {
-        leaderboards.updateAndGet(current -> {
-            Map<String, List<TrialRecord>> copy = new HashMap<>(current);
+        state.updateAndGet(current -> {
+            Map<String, List<TrialRecord>> copy = new HashMap<>(current.leaderboards());
             copy.remove(trackId);
-            return Map.copyOf(copy);
+            Map<String, Integer> counts = new HashMap<>(current.recordCounts());
+            counts.remove(trackId);
+            return new State(Map.copyOf(copy), Map.copyOf(counts));
         });
+    }
+
+    private record State(
+        Map<String, List<TrialRecord>> leaderboards,
+        Map<String, Integer> recordCounts
+    ) {
     }
 }

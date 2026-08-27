@@ -1,6 +1,7 @@
 package cn.cloudfl4re.boatrace.scheduler;
 
 import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;

@@ -1,9 +1,9 @@
 name: BoatRaceIntegrationHarness
 version: '1.2.0'
 main: cn.cloudfl4re.boatrace.harness.BotHarnessPlugin
-description: BoatRace Folia integration harness
-author: cloudfl4re, xWtree
-api-version: '1.21'
+description: BoatRace Lophine/Folia integration harness
+authors: [cloudfl4re, xWtree]
+api-version: '${targetApi}'
 folia-supported: true
 commands:
   brtest:

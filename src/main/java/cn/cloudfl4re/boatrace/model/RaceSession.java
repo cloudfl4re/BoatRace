@@ -16,6 +16,7 @@ public final class RaceSession {
     private final long createdEpochMillis;
     private final Map<UUID, ParticipantProgress> participants = new LinkedHashMap<>();
     private RacePhase phase = RacePhase.WAITING;
+    private int laps;
     private long lastActivityNanos;
     private long goNanos;
     private long goEpochMillis;
@@ -43,6 +44,15 @@ public final class RaceSession {
         return true;
     }
 
+    public synchronized boolean configureLaps(int value) {
+        if (phase != RacePhase.WAITING || value < 1) {
+            return false;
+        }
+        laps = value;
+        lastActivityNanos = System.nanoTime();
+        return true;
+    }
+
     public synchronized boolean removeWaiting(UUID playerId, long nowNanos) {
         if (phase != RacePhase.WAITING || participants.remove(playerId) == null) {
             return false;
@@ -52,7 +62,7 @@ public final class RaceSession {
     }
 
     public synchronized boolean beginStaging(long nowNanos) {
-        if (phase != RacePhase.WAITING || participants.isEmpty()) {
+        if (phase != RacePhase.WAITING || laps < 1 || participants.isEmpty()) {
             return false;
         }
         phase = RacePhase.STAGING;
@@ -92,6 +102,9 @@ public final class RaceSession {
         phase = RacePhase.RUNNING;
         goNanos = nanos;
         goEpochMillis = epochMillis;
+        pausedNanos = 0L;
+        pauseStartedNanos = 0L;
+        firstFinisherClaimed = false;
         participants.replaceAll((id, value) -> value.running());
         return true;
     }
@@ -102,6 +115,7 @@ public final class RaceSession {
         }
         phase = RacePhase.PAUSED;
         pauseStartedNanos = nowNanos;
+        lastActivityNanos = nowNanos;
         return true;
     }
 
@@ -112,6 +126,7 @@ public final class RaceSession {
         pausedNanos += Math.max(0L, nowNanos - pauseStartedNanos);
         pauseStartedNanos = 0L;
         phase = RacePhase.RUNNING;
+        lastActivityNanos = nowNanos;
         return true;
     }
 
@@ -144,6 +159,22 @@ public final class RaceSession {
         return Optional.ofNullable(participants.get(playerId));
     }
 
+    public synchronized String leaderName() {
+        return participants.values().stream()
+            .filter(value -> value.status() == ParticipantStatus.FINISHED)
+            .min(Comparator.comparingInt(ParticipantProgress::finishRank))
+            .map(ParticipantProgress::playerName)
+            .orElse(null);
+    }
+
+    public synchronized long leaderTimeNanos() {
+        return participants.values().stream()
+            .filter(value -> value.status() == ParticipantStatus.FINISHED)
+            .min(Comparator.comparingInt(ParticipantProgress::finishRank))
+            .map(ParticipantProgress::finishNanos)
+            .orElse(0L);
+    }
+
     public synchronized boolean updatePosition(UUID playerId, Point3 point) {
         ParticipantProgress current = participants.get(playerId);
         if (phase != RacePhase.RUNNING || current == null || current.status() != ParticipantStatus.RUNNING) {
@@ -151,20 +182,6 @@ public final class RaceSession {
         }
         participants.put(playerId, current.at(point));
         return true;
-    }
-
-    public synchronized String leaderName() {
-        return participants.values().stream()
-            .filter(value -> value.status() == ParticipantStatus.FINISHED)
-            .min(java.util.Comparator.comparingInt(ParticipantProgress::finishRank))
-            .map(ParticipantProgress::playerName).orElse(null);
-    }
-
-    public synchronized long leaderTimeNanos() {
-        return participants.values().stream()
-            .filter(value -> value.status() == ParticipantStatus.FINISHED)
-            .min(java.util.Comparator.comparingInt(ParticipantProgress::finishRank))
-            .map(ParticipantProgress::finishNanos).orElse(0L);
     }
 
     public synchronized boolean advance(UUID playerId, Point3 point) {
@@ -177,30 +194,52 @@ public final class RaceSession {
     }
 
     public synchronized boolean advanceTo(UUID playerId, int nextCheckpoint, Point3 point) {
+        return advanceTo(playerId, nextCheckpoint, point, 0L);
+    }
+
+    public synchronized boolean advanceTo(UUID playerId, int nextCheckpoint, Point3 point, long elapsedNanos) {
         ParticipantProgress current = participants.get(playerId);
         if (phase != RacePhase.RUNNING || current == null || current.status() != ParticipantStatus.RUNNING || nextCheckpoint <= current.nextCheckpoint()) {
             return false;
         }
-        participants.put(playerId, current.advanceTo(nextCheckpoint, point));
+        participants.put(playerId, current.advanceTo(nextCheckpoint, point, elapsedNanos));
+        return true;
+    }
+
+    public synchronized boolean nextLap(UUID playerId, Point3 point) {
+        return nextLap(playerId, point, 0L);
+    }
+
+    public synchronized boolean nextLap(UUID playerId, Point3 point, long elapsedNanos) {
+        ParticipantProgress current = participants.get(playerId);
+        if (phase != RacePhase.RUNNING || current == null || current.status() != ParticipantStatus.RUNNING || current.completedLaps() + 1 >= laps) {
+            return false;
+        }
+        participants.put(playerId, current.nextLap(point, elapsedNanos));
         return true;
     }
 
     public synchronized Optional<ParticipantProgress> finish(UUID playerId, long nowNanos, Point3 point) {
         ParticipantProgress current = participants.get(playerId);
-        if (phase != RacePhase.RUNNING || current == null || current.status() != ParticipantStatus.RUNNING) {
+        if (phase != RacePhase.RUNNING || current == null || current.status() != ParticipantStatus.RUNNING || current.completedLaps() + 1 < laps) {
             return Optional.empty();
         }
-        ParticipantProgress finished = current.finished(++finishSequence, Math.max(0L, nowNanos - goNanos), point);
+        ParticipantProgress finished = current.finished(++finishSequence, elapsedNanos(nowNanos), point);
         participants.put(playerId, finished);
         return Optional.of(finished);
     }
 
     public synchronized Optional<ParticipantProgress> dnf(UUID playerId) {
+        return dnf(playerId, 0L);
+    }
+
+    public synchronized Optional<ParticipantProgress> dnf(UUID playerId, long nowNanos) {
         ParticipantProgress current = participants.get(playerId);
         if (current == null || current.terminal()) {
             return Optional.empty();
         }
-        ParticipantProgress dnf = current.dnf();
+        long elapsed = elapsedNanos(nowNanos);
+        ParticipantProgress dnf = current.dnf(elapsed);
         participants.put(playerId, dnf);
         return Optional.of(dnf);
     }
@@ -223,7 +262,9 @@ public final class RaceSession {
             value.playerName(),
             value.finishRank(),
             value.finishNanos(),
-            value.status() == ParticipantStatus.FINISHED
+            value.status() == ParticipantStatus.FINISHED,
+            value.completedLaps(),
+            laps
         )).toList();
     }
 
@@ -233,6 +274,18 @@ public final class RaceSession {
 
     public synchronized void cancelPhase() {
         phase = RacePhase.CANCELLED;
+    }
+
+    public synchronized boolean cancelIfActive() {
+        if (phase == RacePhase.CANCELLED || phase == RacePhase.FINISHED) {
+            return false;
+        }
+        phase = RacePhase.CANCELLED;
+        return true;
+    }
+
+    public synchronized boolean isPaused() {
+        return phase == RacePhase.PAUSED;
     }
 
     public synchronized void touch(long nowNanos) {
@@ -277,6 +330,10 @@ public final class RaceSession {
 
     public synchronized int size() {
         return participants.size();
+    }
+
+    public synchronized int laps() {
+        return laps;
     }
 
     public synchronized boolean member(UUID playerId) {
