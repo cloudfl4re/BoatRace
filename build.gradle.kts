@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "cn.cloudfl4re"
-version = "1.1.0"
+version = "1.2.0"
 
 val supportedTargetPlatforms = listOf("26.2", "26.1.2", "1.21.11")
 val buildOutputDirectory = providers.gradleProperty("buildOutputDir")

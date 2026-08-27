@@ -1,15 +1,15 @@
 name: BoatRace
 version: "${version}"
 main: cn.cloudfl4re.boatrace.BoatRacePlugin
-description: Lophine ${targetApi} ice boat racing and time trial plugin
-author: cloudfl4re
+description: Lophine/Folia ${targetApi} ice boat racing and time trial plugin
+authors: [cloudfl4re, xWtree]
 api-version: '${targetApi}'
 folia-supported: true
 softdepend: [PlaceholderAPI]
 commands:
   race:
     description: BoatRace main command
-    usage: /race
+    usage: /race help
     permission: boatrace.use
 permissions:
   boatrace.use:
@@ -25,14 +25,14 @@ permissions:
     description: Open the BoatRace GUI
     default: true
   boatrace.gui.race:
-    description: View race status and results in the GUI
+    description: View race status and leaderboards in the GUI
     default: true
   boatrace.gui.control:
     description: Control active races from the GUI
     default: op
   boatrace.gui.track:
-    description: Manage tracks from the GUI
+    description: Manage BoatRace tracks from the GUI
     default: op
   boatrace.gui.view:
-    description: Edit GUI layouts
+    description: Edit BoatRace GUI layouts
     default: op

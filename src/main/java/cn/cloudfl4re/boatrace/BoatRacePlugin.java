@@ -69,7 +69,6 @@ public final class BoatRacePlugin extends JavaPlugin {
         guiConfigs = new GuiConfigService(this);
         guiConfigs.initialize();
         gui = new GuiService(this, guiConfigs, messages, races, scheduler);
-        gui.start();
         registerPlaceholderExpansion();
         placeholderCheckTask = scheduler.runGlobalRepeating(this::registerPlaceholderExpansion, 1L, 5L);
         RaceCommand raceCommand = new RaceCommand(this);
@@ -150,7 +149,6 @@ public final class BoatRacePlugin extends JavaPlugin {
             expansion = null;
         }
         if (gui != null) {
-            gui.shutdown();
             gui = null;
         }
         guiConfigs = null;

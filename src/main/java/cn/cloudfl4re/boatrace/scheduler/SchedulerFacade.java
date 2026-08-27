@@ -25,9 +25,10 @@ public final class SchedulerFacade {
     private static synchronized void detectFolia() {
         if (folia == null) {
             try {
-                Bukkit.getServer().getClass().getMethod("getRegionScheduler");
+                // 1.21 与 26.x 均提供该 Folia 标识类；只在启动时检测一次。
+                Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
                 folia = true;
-            } catch (ReflectiveOperationException ignored) {
+            } catch (ClassNotFoundException exception) {
                 folia = false;
             }
         }

@@ -109,11 +109,12 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
                 messages.send(player, "gui-no-permission");
                 return true;
             }
-            String menu = args.length >= 3 ? args[2] : "main";
+            String menu = args.length >= 3 ? args[2].toLowerCase(Locale.ROOT) : "main";
             if (plugin.guiConfigs() == null || plugin.guiConfigs().get(menu) == null) {
                 messages.send(player, "gui-invalid-menu");
                 return true;
             }
+            player.closeInventory();
             plugin.gui().open(player, menu, true);
             messages.send(player, "gui-layout-opened");
             return true;
@@ -861,6 +862,10 @@ public final class RaceCommand implements CommandExecutor, org.bukkit.command.Ta
             values.addAll(races.spectatorTargetNames(player));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("last")) {
             values.addAll(tracks.snapshot().keySet());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("gui")) {
+            values.add("view");
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("gui") && args[1].equalsIgnoreCase("view")) {
+            values.addAll(plugin.guiConfigs().snapshot().keySet());
         }
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         return values.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(prefix)).sorted().toList();

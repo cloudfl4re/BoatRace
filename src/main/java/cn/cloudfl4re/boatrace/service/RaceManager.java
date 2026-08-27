@@ -28,6 +28,7 @@ import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
@@ -38,10 +39,9 @@ import org.bukkit.entity.Boat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
-import org.bukkit.GameMode;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.util.Vector;
 
 import java.time.Duration;
@@ -542,6 +542,7 @@ public final class RaceManager {
                 Component.empty(),
                 Title.Times.times(Duration.ZERO, Duration.ofMillis(850), Duration.ofMillis(150))
             )));
+            runForPlayer(participant.playerId(), player -> player.playSound(player.getLocation(), seconds == 1 ? Sound.BLOCK_NOTE_BLOCK_PLING : Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, seconds == 1 ? 1.2f : 0.8f));
         }
         scheduler.runGlobalDelayed(() -> countdown(code, seconds - 1), 20L);
     }
@@ -570,6 +571,7 @@ public final class RaceManager {
                     Component.empty(),
                     Title.Times.times(Duration.ZERO, Duration.ofSeconds(1), Duration.ofMillis(250))
                 ));
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
                 startUi(player);
             });
         }
@@ -1847,6 +1849,13 @@ public final class RaceManager {
         Track track = tracks.get(session.trackId()).orElse(null);
         if (progress == null || track == null || progress.status() != ParticipantStatus.RUNNING || !track.worldId().equals(player.getWorld().getUID())) {
             return;
+        }
+        String leader = session.leaderName();
+        if (leader == null) {
+            player.sendActionBar(messages.unprefixed("gui-leaderboard-empty-actionbar"));
+        } else {
+            player.sendActionBar(messages.unprefixed("gui-leaderboard-actionbar", Map.of(
+                "player", leader, "time", TimeFormatter.formatNanos(session.leaderTimeNanos()))));
         }
         Cuboid target = track.target(progress.nextCheckpoint());
         particles.gate(player, target, progress.nextCheckpoint() < track.checkpoints().size() ? Color.AQUA : Color.LIME);

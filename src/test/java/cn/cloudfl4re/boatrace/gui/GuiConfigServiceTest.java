@@ -80,5 +80,3 @@ class GuiConfigServiceTest {
         assertThrows(IllegalArgumentException.class, () -> GuiMenuConfig.parse("broken", yaml));
     }
 }
-
-

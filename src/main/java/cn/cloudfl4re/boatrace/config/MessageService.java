@@ -66,6 +66,10 @@ public final class MessageService {
         return deserialize(raw == null ? "" : raw);
     }
 
+    /**
+     * 支持默认 MiniMessage，同时兼容旧配置常见的 & 和 § 颜色代码。
+     * 优先解析 MiniMessage，避免把尖括号占位符误当作传统颜色文本。
+     */
     private Component deserialize(String raw) {
         if (raw.indexOf('<') >= 0) {
             return miniMessage.deserialize(raw);

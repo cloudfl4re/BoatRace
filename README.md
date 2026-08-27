@@ -7,7 +7,7 @@
 
 BoatRace 是一款面向 Lophine/Folia 的冰船竞速插件。它不生成冰道地图，而是把服务器已经建好的冰船道路配置成可计时、可排名、可开房间的竞速赛道。
 
-作者：cloudfl4re
+作者：cloudfl4re、xWtree
 
 ## 功能概览
 
@@ -34,7 +34,7 @@ BoatRace 是一款面向 Lophine/Folia 的冰船竞速插件。它不生成冰�
 
 ## 安装
 
-1. 按服务端版本下载对应的 `BoatRace-1.1.0-<目标版本>.jar`。
+1. 按服务端版本下载对应的 `BoatRace-1.2.0-<目标版本>.jar`。
 2. 将插件放入服务端的 `plugins` 目录。
 3. 如果要使用全息图榜单，另外安装 PlaceholderAPI。
 4. 完整重启服务端。
@@ -482,9 +482,9 @@ $env:GRADLE_OPTS='-Dhttps.proxyHost=localhost -Dhttps.proxyPort=7897 -Dhttp.prox
 构建完成后会同时生成：
 
 ```text
-build/libs/BoatRace-1.1.0-26.2.jar
-build/libs/BoatRace-1.1.0-26.1.2.jar
-build/libs/BoatRace-1.1.0-1.21.11.jar
+build/libs/BoatRace-1.2.0-26.2.jar
+build/libs/BoatRace-1.2.0-26.1.2.jar
+build/libs/BoatRace-1.2.0-1.21.11.jar
 ```
 
 如果只需要构建单个目标，可以使用对应的 `targetPlatform`：
@@ -499,7 +499,7 @@ build/libs/BoatRace-1.1.0-1.21.11.jar
 
 上述三个 JAR 都是正式插件文件，按服务器版本选择对应文件安装。
 
-`integrationHarnessJar` 只用于 Lophine 假人验收，不需要安装到正式服务器。
+`integrationHarnessJar` 只用于 Lophine/Folia 假人验收，不需要安装到正式服务器。
 
 ## 常见问题
 
@@ -535,4 +535,4 @@ build/libs/BoatRace-1.1.0-1.21.11.jar
 
 ## 关于
 
-BoatRace 由 cloudfl4re 制作，面向 Lophine/Folia 区域线程服务端设计。
+BoatRace 由 cloudfl4re 与 xWtree 共同制作，面向 Lophine/Folia 区域线程服务端设计。

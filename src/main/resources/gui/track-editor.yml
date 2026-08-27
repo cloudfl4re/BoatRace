@@ -77,12 +77,12 @@ menu:
 pane:
   enable: true
   index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 46, 47, 48, 50, 51, 52, 53]
-  name: "<gray>边框</gray>"
+  name: §e✧ 闪闪发光的边框 ✧
   material: WHITE_STAINED_GLASS_PANE
   lore:
-    - "<dark_gray>BoatRace</dark_gray>"
+    - §7嘿嘿嘿～
+    - §7戳我干嘛呀小坏蛋～
   isEnchant: false
   custom-model-data: 0
   hideFlag: true
   hideEnchant: true
-

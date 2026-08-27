@@ -23,5 +23,3 @@ public final class GuiHolder implements InventoryHolder {
     public void inventory(Inventory inventory) { this.inventory = inventory; }
     @Override public Inventory getInventory() { return inventory; }
 }
-
-

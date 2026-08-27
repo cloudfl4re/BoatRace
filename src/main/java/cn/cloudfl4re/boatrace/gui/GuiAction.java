@@ -28,7 +28,7 @@ public enum GuiAction {
         if (raw == null || raw.isBlank()) {
             throw new IllegalArgumentException("action 不能为空");
         }
-        String normalized = raw.trim().toLowerCase(Locale.ROOT).replace('.', '-').replace('_', '-');
+        String normalized = raw.trim().toLowerCase(Locale.ROOT);
         for (GuiAction action : values()) {
             if (action.id.equals(normalized)) {
                 return action;
@@ -41,4 +41,3 @@ public enum GuiAction {
         return parse(raw);
     }
 }
-

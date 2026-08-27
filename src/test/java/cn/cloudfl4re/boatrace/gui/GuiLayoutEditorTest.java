@@ -26,5 +26,3 @@ class GuiLayoutEditorTest {
         assertThrows(IllegalArgumentException.class, () -> GuiLayoutEditor.move(indexes, "race", 54, 54));
     }
 }
-
-
