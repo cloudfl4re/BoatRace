@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: "26.2"
+            java: "25"
+          - target: "26.1.2"
+            java: "25"
+          - target: "1.21.11"
+            java: "21"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ matrix.java }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java }}
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            .gradle/loom-cache
+
+      - name: Make Gradle executable
+        run: chmod +x gradlew
+
+      - name: Test and build
+        run: ./gradlew clean test shadowJar --no-daemon -PtargetPlatform=${{ matrix.target }}
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BoatRace-${{ matrix.target }}-${{ github.sha }}
+          path: build/libs/*.jar
+          if-no-files-found: error
