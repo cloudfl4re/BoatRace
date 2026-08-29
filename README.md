@@ -1,7 +1,7 @@
 # BoatRace
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1.2%20%7C%2026.2-2d2d2d)
-![Server](https://img.shields.io/badge/Server-Lophine%20%2F%20Folia-4b8bbe)
+![Server](https://img.shields.io/badge/Server-Folia-4b8bbe)
 ![Java](https://img.shields.io/badge/Java-21%20%7C%2025-e76f00)
 ![PlaceholderAPI](https://img.shields.io/badge/PlaceholderAPI-optional-7b61ff)
 
